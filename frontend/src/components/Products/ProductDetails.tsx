@@ -109,8 +109,7 @@ const ProductDetails = () => {
                                             backgroundColor: color.toLowerCase(),
                                             filter: "brightness(0.5)",
                                         }}
-                                    >
-                                    </Button>
+                                    />
                                 ))}
                             </div>
                         </div>

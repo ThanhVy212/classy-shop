@@ -1,11 +1,28 @@
-import {useEffect, useRef, useState, type FormEvent} from "react";
-import {Search, X} from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Search, X } from "lucide-react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Button from "./Button.tsx";
+import { useDebounce } from "../../hooks/useDebounce.ts";
 
 const SearchBar = () => {
-    const [searchTerm, setSearchTerm] = useState("");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const [searchTerm, setSearchTerm] = useState(() => searchParams.get("search") || "");
     const [isOpen, setIsOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const isFirstRender = useRef(true);
+
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+    // Sync input when searchParam changes externally
+    useEffect(() => {
+        const querySearch = searchParams.get("search") || "";
+        if (querySearch !== searchTerm && !isOpen) {
+            setSearchTerm(querySearch);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (isOpen) {
@@ -13,11 +30,56 @@ const SearchBar = () => {
         }
     }, [isOpen]);
 
-    const handleOpen = () => setIsOpen(true);
+    // Debounced search effect
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        const trimmed = debouncedSearchTerm.trim();
+        const currentParam = searchParams.get("search") || "";
+
+        // If no change, do nothing
+        if (trimmed === currentParam) return;
+
+        if (trimmed) {
+            if (location.pathname.startsWith("/collections/")) {
+                const params = new URLSearchParams(searchParams);
+                params.set("search", trimmed);
+                setSearchParams(params, { replace: true });
+            } else {
+                navigate(`/collections/all?search=${encodeURIComponent(trimmed)}`);
+            }
+        } else if (currentParam && location.pathname.startsWith("/collections/")) {
+            const params = new URLSearchParams(searchParams);
+            params.delete("search");
+            setSearchParams(params, { replace: true });
+        }
+    }, [debouncedSearchTerm]);
+
+    const handleOpen = () => {
+        setIsOpen(true);
+    };
 
     const handleClose = () => {
         setIsOpen(false);
         setSearchTerm("");
+        if (searchParams.has("search") && location.pathname.startsWith("/collections/")) {
+            const params = new URLSearchParams(searchParams);
+            params.delete("search");
+            setSearchParams(params, { replace: true });
+        }
+    };
+
+    const handleClear = () => {
+        setSearchTerm("");
+        if (searchParams.has("search") && location.pathname.startsWith("/collections/")) {
+            const params = new URLSearchParams(searchParams);
+            params.delete("search");
+            setSearchParams(params, { replace: true });
+        }
+        inputRef.current?.focus();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -27,9 +89,17 @@ const SearchBar = () => {
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         const term = searchTerm.trim();
-        if (!term) return;
-        // TODO: navigate to search results page
-        console.log("Searching for:", term);
+        if (location.pathname.startsWith("/collections/")) {
+            const params = new URLSearchParams(searchParams);
+            if (term) {
+                params.set("search", term);
+            } else {
+                params.delete("search");
+            }
+            setSearchParams(params, { replace: true });
+        } else if (term) {
+            navigate(`/collections/all?search=${encodeURIComponent(term)}`);
+        }
     };
 
     if (!isOpen) {
@@ -38,9 +108,9 @@ const SearchBar = () => {
                 type="button"
                 onClick={handleOpen}
                 aria-label="Open search"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100 hover:text-black"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100 hover:text-black cursor-pointer"
             >
-                <Search className="h-5 w-5"/>
+                <Search className="h-5 w-5" />
             </Button>
         );
     }
@@ -64,29 +134,29 @@ const SearchBar = () => {
             {searchTerm && (
                 <Button
                     type="button"
-                    onClick={() => setSearchTerm("")}
+                    onClick={handleClear}
                     aria-label="Clear search"
-                    className="mr-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
+                    className="mr-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700 cursor-pointer"
                 >
-                    <X className="h-4 w-4"/>
+                    <X className="h-4 w-4" />
                 </Button>
             )}
 
             <Button
                 type="submit"
                 aria-label="Submit search"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-200 hover:text-black"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-200 hover:text-black cursor-pointer"
             >
-                <Search className="h-4 w-4"/>
+                <Search className="h-4 w-4" />
             </Button>
 
             <Button
                 type="button"
                 onClick={handleClose}
                 aria-label="Close search"
-                className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
+                className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700 cursor-pointer"
             >
-                <X className="h-4 w-4"/>
+                <X className="h-4 w-4" />
             </Button>
         </form>
     );

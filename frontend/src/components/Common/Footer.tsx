@@ -139,7 +139,7 @@ const Footer = () => {
             {/* Footer Bottom */}
             <div className="container mx-auto mt-12 px-4 lg:px-0 border-t border-gray-200 pt-6">
                 <p className="text-gray-500 text-sm tracking-tight text-center">
-                    &copy; 2024, CompileTab. All Rights Reserved.
+                    &copy; 2024, ClassyTeam. All Rights Reserved.
                 </p>
             </div>
         </footer>

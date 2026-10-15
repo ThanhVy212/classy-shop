@@ -4,6 +4,11 @@ import AdminLayout from "./components/Layout/AdminLayout.tsx";
 import Home from "./pages/Home.tsx";
 import { useEffect } from "react";
 import {Toaster} from "sonner";
+import Login from "./pages/Login.tsx";
+import Register from "./pages/Register.tsx";
+import Profile from "./pages/Profile.tsx";
+import Collection from "./pages/Collection.tsx";
+import ProductDetails from "./components/Products/ProductDetails.tsx";
 
 const App = () => {
     useEffect(() => {
@@ -49,6 +54,11 @@ const App = () => {
             <Routes>
                 <Route path="/" element={<UserLayout/>}>
                     <Route index element={<Home />} />
+                    <Route path="/login" element={<Login />}/>
+                    <Route path="/register" element={<Register />}/>
+                    <Route path="/profile" element={<Profile />}/>
+                    <Route path="/collections/:collection" element={<Collection />}/>
+                    <Route path="/products/:id" element={<ProductDetails />}/>
                 </Route>
                 <Route path="/admin" element={<AdminLayout />}>
                     {/*Admin Layout*/}
