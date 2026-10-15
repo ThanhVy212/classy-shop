@@ -121,4 +121,9 @@
   .badge-red {
     @apply bg-rabbit-red text-white text-xs rounded-full px-2 py-0.5;
   }
+
+  /* Floating Navbar */
+  .floating-nav {
+    @apply shadow-md bg-white/95 backdrop-blur-md;
+  }
 }

@@ -230,7 +230,7 @@ const FilterSidebar = () => {
         <div className="p-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-2">
-                <h3 className="text-xl font-medium text-gray-800">Filter</h3>
+                <h3 className="text-xl font-medium text-gray-800">Filters</h3>
                 {hasActiveFilters && (
                     <button
                         type="button"
