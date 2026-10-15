@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState, type FormEvent} from "react";
 import {Search, X} from "lucide-react";
+import Button from "./Button.tsx";
 
 const SearchBar = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -33,14 +34,14 @@ const SearchBar = () => {
 
     if (!isOpen) {
         return (
-            <button
+            <Button
                 type="button"
                 onClick={handleOpen}
                 aria-label="Open search"
                 className="flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100 hover:text-black"
             >
                 <Search className="h-5 w-5"/>
-            </button>
+            </Button>
         );
     }
 
@@ -61,32 +62,32 @@ const SearchBar = () => {
             />
 
             {searchTerm && (
-                <button
+                <Button
                     type="button"
                     onClick={() => setSearchTerm("")}
                     aria-label="Clear search"
                     className="mr-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
                 >
                     <X className="h-4 w-4"/>
-                </button>
+                </Button>
             )}
 
-            <button
+            <Button
                 type="submit"
                 aria-label="Submit search"
                 className="flex h-8 w-8 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-200 hover:text-black"
             >
                 <Search className="h-4 w-4"/>
-            </button>
+            </Button>
 
-            <button
+            <Button
                 type="button"
                 onClick={handleClose}
                 aria-label="Close search"
                 className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700"
             >
                 <X className="h-4 w-4"/>
-            </button>
+            </Button>
         </form>
     );
 };

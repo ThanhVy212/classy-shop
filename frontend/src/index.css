@@ -7,5 +7,118 @@
 .root {
   font-family: "Inter", sans-serif;
   font-optical-sizing: auto;
-  font-style:  normal;
+  font-style: normal;
+}
+
+/* Custom Scrollbar */
+.better-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.5s ease;
+}
+
+.better-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.better-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.5s ease;
+}
+
+.better-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  transition: background-color 0.5s ease, border-color 0.5s ease;
+}
+
+.better-scrollbar:hover,
+.better-scrollbar.is-scrolling {
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.better-scrollbar:hover::-webkit-scrollbar-track,
+.better-scrollbar.is-scrolling::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.better-scrollbar:hover::-webkit-scrollbar-thumb,
+.better-scrollbar.is-scrolling::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-color: #f1f5f9;
+}
+
+.better-scrollbar::-webkit-scrollbar-thumb:hover,
+.better-scrollbar:hover::-webkit-scrollbar-thumb:hover,
+.better-scrollbar.is-scrolling::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+  border-color: #f1f5f9;
+}
+
+.better-scrollbar::-webkit-scrollbar-thumb:active,
+.better-scrollbar:hover::-webkit-scrollbar-thumb:active,
+.better-scrollbar.is-scrolling::-webkit-scrollbar-thumb:active {
+  background-color: #64748b;
+  border-color: #f1f5f9;
+}
+
+@layer components {
+  /* Common Buttons */
+  .btn-black {
+    @apply bg-black text-white hover:bg-gray-800 transition-all cursor-pointer;
+  }
+
+  .btn-qty {
+    @apply border border-gray-300 rounded px-2 py-1 text-xl font-semibold hover:bg-gray-100 transition cursor-pointer;
+  }
+
+  /* Button text slide up effect */
+  .btn-text-slide {
+    @apply relative inline-flex items-center justify-center
+    overflow-hidden bg-white px-6 py-3
+    text-lg font-medium text-gray-950 rounded-sm;
+  }
+
+  .btn-text-slide .text-primary {
+    @apply transition-transform duration-300 ease-in-out;
+  }
+
+  .btn-text-slide:hover .text-primary {
+    @apply translate-y-[calc(-100%_-_0.75rem)];
+  }
+
+  .btn-text-slide .text-secondary {
+    @apply absolute translate-y-[calc(100%_+_0.75rem)]
+    transition-transform duration-300 ease-in-out;
+  }
+
+  .btn-text-slide:hover .text-secondary {
+    @apply translate-y-0;
+  }
+
+  /* Form Elements */
+  .input-base {
+    @apply text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all;
+  }
+
+  /* Footer Classes */
+  .footer-heading {
+    @apply text-lg text-black mb-4;
+  }
+
+  .footer-link {
+    @apply text-gray-600 hover:text-black transition-colors text-sm;
+  }
+
+  .social-icon {
+    @apply text-black hover:text-gray-600 transition-colors;
+  }
+
+  /* Badges */
+  .badge-red {
+    @apply bg-rabbit-red text-white text-xs rounded-full px-2 py-0.5;
+  }
 }
