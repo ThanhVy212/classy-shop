@@ -152,8 +152,9 @@ const ProductDetails = () => {
                         <Button
                             onClick={handleAddToCart}
                             disabled={isButtonDisabled}
-                            className={`bg-black text-white py-2 px-6 rounded w-full mb-4} 
-                                ${isButtonDisabled ? "bg-black/50" : "hover:bg-gray-800"}`}
+                            className={`btn-black py-2 px-6 rounded w-full mb-4 ${
+                                isButtonDisabled ? "opacity-50 pointer-events-none" : ""
+                            }`}
                         >
                             {isButtonDisabled ? "ADDING..." : "ADD TO CART"}
                         </Button>

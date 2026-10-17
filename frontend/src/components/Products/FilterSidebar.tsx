@@ -244,7 +244,7 @@ const FilterSidebar = () => {
 
             {/* Category Filter */}
             <div className="mb-6">
-                <label className="block text-gray-700 font-medium mb-2">Category</label>
+                <label className="form-label-md">Category</label>
                 {categories.map((category) => (
                     <label key={category} className="flex items-center mb-1.5 cursor-pointer">
                         <input
@@ -254,7 +254,7 @@ const FilterSidebar = () => {
                             onChange={handleFilterChange}
                             onClick={() => handleRadioClick("category", category)}
                             checked={filters.category === category}
-                            className="mr-2 h-4 w-4 text-black focus:ring-black accent-black cursor-pointer"
+                            className="form-radio"
                         />
                         <span className="text-gray-700 text-sm hover:text-black transition-colors">
                             {category}
@@ -265,7 +265,7 @@ const FilterSidebar = () => {
 
             {/* Gender Filter */}
             <div className="mb-6">
-                <label className="block text-gray-700 font-medium mb-2">Gender</label>
+                <label className="form-label-md">Gender</label>
                 {genders.map((gender) => (
                     <label key={gender} className="flex items-center mb-1.5 cursor-pointer">
                         <input
@@ -275,7 +275,7 @@ const FilterSidebar = () => {
                             onChange={handleFilterChange}
                             onClick={() => handleRadioClick("gender", gender)}
                             checked={filters.gender === gender}
-                            className="mr-2 h-4 w-4 text-black focus:ring-black accent-black cursor-pointer"
+                            className="form-radio"
                         />
                         <span className="text-gray-700 text-sm hover:text-black transition-colors">
                             {gender}
@@ -286,7 +286,7 @@ const FilterSidebar = () => {
 
             {/* Color Filter */}
             <div className="mb-6">
-                <label className="block text-gray-700 font-medium mb-2">Color</label>
+                <label className="form-label-md">Color</label>
                 <div className="flex flex-wrap gap-2 pt-1">
                     {colors.map((color) => {
                         const isSelected = filters.color === color;
@@ -308,7 +308,7 @@ const FilterSidebar = () => {
 
             {/* Size Filter */}
             <div className="mb-6">
-                <label className="block text-gray-700 font-medium mb-2">Size</label>
+                <label className="form-label-md">Size</label>
                 {sizes.map((size) => (
                     <label key={size} className="flex items-center mb-1.5 cursor-pointer">
                         <input
@@ -317,7 +317,7 @@ const FilterSidebar = () => {
                             value={size}
                             onChange={handleFilterChange}
                             checked={filters.size.includes(size)}
-                            className="mr-2 h-4 w-4 text-black focus:ring-black accent-black rounded cursor-pointer"
+                            className="form-checkbox"
                         />
                         <span className="text-gray-700 text-sm hover:text-black transition-colors">
                             {size}
@@ -328,7 +328,7 @@ const FilterSidebar = () => {
 
             {/* Material Filter */}
             <div className="mb-6">
-                <label className="block text-gray-700 font-medium mb-2">Material</label>
+                <label className="form-label-md">Material</label>
                 {materials.map((material) => (
                     <label key={material} className="flex items-center mb-1.5 cursor-pointer">
                         <input
@@ -337,7 +337,7 @@ const FilterSidebar = () => {
                             value={material}
                             onChange={handleFilterChange}
                             checked={filters.material.includes(material)}
-                            className="mr-2 h-4 w-4 text-black focus:ring-black accent-black rounded cursor-pointer"
+                            className="form-checkbox"
                         />
                         <span className="text-gray-700 text-sm hover:text-black transition-colors">
                             {material}
@@ -348,7 +348,7 @@ const FilterSidebar = () => {
 
             {/* Brand Filter */}
             <div className="mb-6">
-                <label className="block text-gray-700 font-medium mb-2">Brand</label>
+                <label className="form-label-md">Brand</label>
                 {brands.map((brand) => (
                     <label key={brand} className="flex items-center mb-1.5 cursor-pointer">
                         <input
@@ -357,7 +357,7 @@ const FilterSidebar = () => {
                             value={brand}
                             onChange={handleFilterChange}
                             checked={filters.brand.includes(brand)}
-                            className="mr-2 h-4 w-4 text-black focus:ring-black accent-black rounded cursor-pointer"
+                            className="form-checkbox"
                         />
                         <span className="text-gray-700 text-sm hover:text-black transition-colors">
                             {brand}
@@ -368,7 +368,7 @@ const FilterSidebar = () => {
 
             {/* Price Range Filter */}
             <div className="mb-6">
-                <label className="block text-gray-700 font-medium mb-2">Price Range</label>
+                <label className="form-label-md">Price Range</label>
                 <input
                     type="range"
                     name="priceRange"

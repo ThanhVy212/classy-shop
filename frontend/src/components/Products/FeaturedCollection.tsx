@@ -20,7 +20,7 @@ const FeaturedCollection = () => {
                     </p>
                     <Link
                         to="/collections/all"
-                        className="bg-black text-white px-6 py-3 rounded-lg text-lg hover:bg-gray-800"
+                        className="btn-black px-6 py-3 rounded-lg text-lg inline-block"
                     >
                         Shop Now
                     </Link>

@@ -145,20 +145,20 @@ const OrderDetails = () => {
                 </div>
 
                 {/* Header Card */}
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs mb-8">
+                <div className="card-padded mb-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-100">
                         <div>
                             <div className="flex items-center gap-3 flex-wrap">
-                                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+                                <h1 className="page-title">
                                     Order #{orderDetails._id}
                                 </h1>
                                 {/* Status badges */}
                                 <div className="flex items-center gap-2">
                                     <span
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                                        className={`status-badge ${
                                             orderDetails.isPaid
-                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                                : "bg-amber-50 text-amber-700 border border-amber-200"
+                                                ? "status-badge-success"
+                                                : "status-badge-warning"
                                         }`}
                                     >
                                         <span
@@ -170,10 +170,10 @@ const OrderDetails = () => {
                                     </span>
 
                                     <span
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                                        className={`status-badge ${
                                             orderDetails.isDelivered
-                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                                : "bg-blue-50 text-blue-700 border border-blue-200"
+                                                ? "status-badge-success"
+                                                : "status-badge-info"
                                         }`}
                                     >
                                         <Truck className="w-3.5 h-3.5" />
@@ -237,11 +237,11 @@ const OrderDetails = () => {
                     {/* Left Column: Order Items & Delivery/Payment cards */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Items Table Card */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                        <div className="card-container">
                             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <ShoppingBag className="w-5 h-5 text-gray-700" />
-                                    <h2 className="text-lg font-bold text-gray-900">
+                                    <h2 className="card-title">
                                         Order Items
                                     </h2>
                                 </div>
@@ -303,7 +303,7 @@ const OrderDetails = () => {
                         {/* Shipping & Payment Info Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {/* Shipping Information Card */}
-                            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+                            <div className="card-padded">
                                 <div className="flex items-center gap-2 mb-4">
                                     <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                                         <MapPin className="w-4 h-4" />
@@ -343,7 +343,7 @@ const OrderDetails = () => {
                             </div>
 
                             {/* Payment Information Card */}
-                            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+                            <div className="card-padded">
                                 <div className="flex items-center gap-2 mb-4">
                                     <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                                         <CreditCard className="w-4 h-4" />
@@ -386,8 +386,8 @@ const OrderDetails = () => {
                     {/* Right Column: Order Summary & Help */}
                     <div className="space-y-6">
                         {/* Order Summary Card */}
-                        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
-                            <h3 className="text-lg font-bold text-gray-900 mb-5">
+                        <div className="card-padded">
+                            <h3 className="card-title mb-5">
                                 Order Summary
                             </h3>
 
@@ -423,7 +423,7 @@ const OrderDetails = () => {
                                 </Link>
 
                                 <Link to="/profile" className="block">
-                                    <button className="w-full py-3 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-semibold transition cursor-pointer">
+                                    <button className="btn-outline w-full py-3">
                                         View All Orders
                                     </button>
                                 </Link>

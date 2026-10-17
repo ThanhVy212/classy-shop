@@ -113,10 +113,10 @@ const OrderManagement = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+                        <h1 className="page-title">
                             Orders Management
                         </h1>
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-200 text-gray-800">
+                        <span className="badge-counter">
                             {orders.length} total
                         </span>
                     </div>
@@ -128,25 +128,25 @@ const OrderManagement = () => {
 
             {/* Quick Summary Pill Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+                <div className="admin-stat-pill">
                     <span className="text-xs text-gray-500 font-medium">Processing</span>
                     <p className="text-xl font-bold text-amber-600 mt-1">
                         {orders.filter((o) => o.status === "Processing").length}
                     </p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+                <div className="admin-stat-pill">
                     <span className="text-xs text-gray-500 font-medium">Shipped</span>
                     <p className="text-xl font-bold text-blue-600 mt-1">
                         {orders.filter((o) => o.status === "Shipped").length}
                     </p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+                <div className="admin-stat-pill">
                     <span className="text-xs text-gray-500 font-medium">Delivered</span>
                     <p className="text-xl font-bold text-emerald-600 mt-1">
                         {orders.filter((o) => o.status === "Delivered").length}
                     </p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+                <div className="admin-stat-pill">
                     <span className="text-xs text-gray-500 font-medium">Cancelled</span>
                     <p className="text-xl font-bold text-red-600 mt-1">
                         {orders.filter((o) => o.status === "Cancelled").length}
@@ -163,7 +163,7 @@ const OrderManagement = () => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search by order ID, name, email..."
-                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                        className="admin-search-input"
                     />
                 </div>
 
@@ -173,7 +173,7 @@ const OrderManagement = () => {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                            className="admin-filter-select"
                         >
                             <option value="all">All Delivery Statuses</option>
                             <option value="Processing">Processing</option>
@@ -186,7 +186,7 @@ const OrderManagement = () => {
                     <select
                         value={paymentFilter}
                         onChange={(e) => setPaymentFilter(e.target.value)}
-                        className="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                        className="admin-filter-select"
                     >
                         <option value="all">All Payments</option>
                         <option value="paid">Paid</option>
@@ -196,10 +196,10 @@ const OrderManagement = () => {
             </div>
 
             {/* Orders Table */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+            <div className="card-container">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-gray-600">
-                        <thead className="bg-gray-50/70 text-xs uppercase text-gray-500 font-semibold border-b border-gray-100">
+                        <thead className="table-head-row">
                             <tr>
                                 <th className="py-3.5 px-5">Order ID</th>
                                 <th className="py-3.5 px-5">Customer</th>
@@ -214,7 +214,7 @@ const OrderManagement = () => {
                         <tbody className="divide-y divide-gray-100">
                             {filteredOrders.length > 0 ? (
                                 filteredOrders.map((order) => (
-                                    <tr key={order._id} className="hover:bg-gray-50/80 transition-colors">
+                                    <tr key={order._id} className="table-row-hover">
                                         <td className="py-4 px-5 font-semibold text-gray-900 whitespace-nowrap">
                                             #{order._id}
                                         </td>
@@ -277,7 +277,7 @@ const OrderManagement = () => {
                                         <td className="py-4 px-5 text-right whitespace-nowrap">
                                             <Link
                                                 to={`/order/${order._id}`}
-                                                className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 hover:text-black hover:underline"
+                                                className="admin-action-link"
                                             >
                                                 <span>View Order</span>
                                                 <ExternalLink className="w-3.5 h-3.5" />
@@ -296,7 +296,7 @@ const OrderManagement = () => {
                     </table>
                 </div>
 
-                <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                <div className="table-footer">
                     <span>
                         Showing {filteredOrders.length} of {orders.length} orders
                     </span>

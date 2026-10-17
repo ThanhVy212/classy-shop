@@ -149,25 +149,25 @@ const AdminDashboard = () => {
         switch (status) {
             case "Delivered":
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="status-badge status-badge-success">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Delivered
                     </span>
                 );
             case "Shipped":
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="status-badge status-badge-info">
                         <Truck className="w-3.5 h-3.5" /> Shipped
                     </span>
                 );
             case "Processing":
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                    <span className="status-badge status-badge-warning">
                         <Clock className="w-3.5 h-3.5" /> Processing
                     </span>
                 );
             case "Cancelled":
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                    <span className="status-badge status-badge-danger">
                         <XCircle className="w-3.5 h-3.5" /> Cancelled
                     </span>
                 );
@@ -179,7 +179,7 @@ const AdminDashboard = () => {
             {/* Header with Title and Quick Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+                    <h1 className="page-title">
                         Dashboard Overview
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">
@@ -189,7 +189,7 @@ const AdminDashboard = () => {
 
                 <div className="flex items-center gap-3">
                     <Link to="/admin/products/new">
-                        <Button className="btn-black px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2">
+                        <Button className="btn-primary-action">
                             <Plus className="w-4 h-4" />
                             <span>Add Product</span>
                         </Button>
@@ -204,7 +204,7 @@ const AdminDashboard = () => {
                     return (
                         <div
                             key={idx}
-                            className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs hover:shadow-md transition-shadow"
+                            className="admin-stat-card"
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium text-gray-500">
@@ -236,10 +236,10 @@ const AdminDashboard = () => {
             {/* Recent Orders & Top Selling Products Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Recent Orders Table (2 Cols) */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+                <div className="lg:col-span-2 card-container">
                     <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                         <div>
-                            <h2 className="text-lg font-bold text-gray-900">Recent Orders</h2>
+                            <h2 className="card-title">Recent Orders</h2>
                             <p className="text-xs text-gray-500">Latest transactions across the store</p>
                         </div>
                         <Link
@@ -253,7 +253,7 @@ const AdminDashboard = () => {
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-gray-600">
-                            <thead className="bg-gray-50/70 text-xs uppercase text-gray-500 font-semibold border-b border-gray-100">
+                            <thead className="table-head-row">
                                 <tr>
                                     <th className="py-3.5 px-5">Order ID</th>
                                     <th className="py-3.5 px-5">Customer</th>
@@ -264,7 +264,7 @@ const AdminDashboard = () => {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {recentOrders.map((order) => (
-                                    <tr key={order._id} className="hover:bg-gray-50/80 transition-colors">
+                                    <tr key={order._id} className="table-row-hover">
                                         <td className="py-4 px-5 font-semibold text-gray-900">
                                             #{order._id}
                                         </td>
@@ -285,7 +285,7 @@ const AdminDashboard = () => {
                                         <td className="py-4 px-5 text-right whitespace-nowrap">
                                             <Link
                                                 to={`/order/${order._id}`}
-                                                className="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-black hover:underline"
+                                                className="admin-action-link"
                                             >
                                                 <span>Details</span>
                                                 <ArrowUpRight className="w-3 h-3" />
@@ -302,7 +302,7 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 space-y-6">
                     <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                         <div>
-                            <h2 className="text-lg font-bold text-gray-900">Top Products</h2>
+                            <h2 className="card-title">Top Products</h2>
                             <p className="text-xs text-gray-500">Highest grossing items</p>
                         </div>
                         <Link

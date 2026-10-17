@@ -132,10 +132,10 @@ const ProductManagement = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+                        <h1 className="page-title">
                             Products Catalog
                         </h1>
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-200 text-gray-800">
+                        <span className="badge-counter">
                             {products.length} total
                         </span>
                     </div>
@@ -145,7 +145,7 @@ const ProductManagement = () => {
                 </div>
 
                 <Link to="/admin/products/new">
-                    <Button className="btn-black px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2">
+                    <Button className="btn-primary-action">
                         <Plus className="w-4 h-4" />
                         <span>Add New Product</span>
                     </Button>
@@ -161,7 +161,7 @@ const ProductManagement = () => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search product name or SKU..."
-                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                        className="admin-search-input"
                     />
                 </div>
 
@@ -171,7 +171,7 @@ const ProductManagement = () => {
                         <select
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                            className="admin-filter-select"
                         >
                             <option value="all">All Categories</option>
                             <option value="Men">Men</option>
@@ -184,7 +184,7 @@ const ProductManagement = () => {
                     <select
                         value={stockFilter}
                         onChange={(e) => setStockFilter(e.target.value)}
-                        className="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                        className="admin-filter-select"
                     >
                         <option value="all">All Stock Status</option>
                         <option value="in_stock">In Stock (&gt;10)</option>
@@ -195,10 +195,10 @@ const ProductManagement = () => {
             </div>
 
             {/* Products Table Card */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+            <div className="card-container">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-gray-600">
-                        <thead className="bg-gray-50/70 text-xs uppercase text-gray-500 font-semibold border-b border-gray-100">
+                        <thead className="table-head-row">
                             <tr>
                                 <th className="py-3.5 px-5">Product</th>
                                 <th className="py-3.5 px-5">SKU</th>
@@ -211,7 +211,7 @@ const ProductManagement = () => {
                         <tbody className="divide-y divide-gray-100">
                             {filteredProducts.length > 0 ? (
                                 filteredProducts.map((prod) => (
-                                    <tr key={prod.id} className="hover:bg-gray-50/80 transition-colors">
+                                    <tr key={prod.id} className="table-row-hover">
                                         <td className="py-4 px-5">
                                             <div className="flex items-center gap-3">
                                                 <img
@@ -262,7 +262,7 @@ const ProductManagement = () => {
                                                     to={`/products/${prod.id}`}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    className="p-1.5 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100 transition"
+                                                    className="btn-action-view"
                                                     title="View in store"
                                                 >
                                                     <ExternalLink className="w-4 h-4" />
@@ -270,7 +270,7 @@ const ProductManagement = () => {
 
                                                 <Link
                                                     to={`/admin/products/${prod.id}/edit`}
-                                                    className="p-1.5 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition"
+                                                    className="btn-action-edit"
                                                     title="Edit product"
                                                 >
                                                     <Edit className="w-4 h-4" />
@@ -278,7 +278,7 @@ const ProductManagement = () => {
 
                                                 <button
                                                     onClick={() => handleDeleteProduct(prod.id, prod.name)}
-                                                    className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition cursor-pointer"
+                                                    className="btn-action-delete"
                                                     title="Delete product"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -310,7 +310,7 @@ const ProductManagement = () => {
                 </div>
 
                 {/* Table Footer */}
-                <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                <div className="table-footer">
                     <span>
                         Showing {filteredProducts.length} of {products.length} products
                     </span>

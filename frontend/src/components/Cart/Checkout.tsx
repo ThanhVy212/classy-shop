@@ -156,9 +156,9 @@ const Checkout = () => {
                         {/* ================= LEFT COLUMN: CHECKOUT FORM ================= */}
                         <div className="lg:col-span-7 space-y-8">
                             {/* Contact Information */}
-                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                            <div className="card-padded p-6">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-lg font-bold text-gray-900">
+                                    <h2 className="card-title">
                                         Contact Information
                                     </h2>
                                     <span className="text-xs text-gray-500">
@@ -171,7 +171,7 @@ const Checkout = () => {
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                        <label className="form-label">
                                             Email Address *
                                         </label>
                                         <input
@@ -181,7 +181,7 @@ const Checkout = () => {
                                             value={formData.email}
                                             onChange={handleInputChange}
                                             placeholder="you@example.com"
-                                            className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all"
+                                            className="form-input"
                                         />
                                     </div>
 
@@ -191,7 +191,7 @@ const Checkout = () => {
                                             name="newsletter"
                                             checked={formData.newsletter}
                                             onChange={handleInputChange}
-                                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black accent-black"
+                                            className="form-checkbox"
                                         />
                                         <span>Email me with news and exclusive discounts</span>
                                     </label>
@@ -199,22 +199,22 @@ const Checkout = () => {
                             </div>
 
                             {/* Shipping Address */}
-                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
-                                <h2 className="text-lg font-bold text-gray-900 mb-4">
+                            <div className="card-padded p-6">
+                                <h2 className="card-title mb-4">
                                     Shipping Address
                                 </h2>
 
                                 <div className="space-y-4">
                                     {/* Country */}
                                     <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                        <label className="form-label">
                                             Country / Region *
                                         </label>
                                         <select
                                             name="country"
                                             value={formData.country}
                                             onChange={handleInputChange}
-                                            className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm bg-white transition-all"
+                                            className="form-select"
                                         >
                                             <option value="United States">United States</option>
                                             <option value="Vietnam">Vietnam</option>
@@ -227,7 +227,7 @@ const Checkout = () => {
                                     {/* First & Last Name */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                            <label className="form-label">
                                                 First Name *
                                             </label>
                                             <input
@@ -237,11 +237,11 @@ const Checkout = () => {
                                                 value={formData.firstName}
                                                 onChange={handleInputChange}
                                                 placeholder="John"
-                                                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all"
+                                                className="form-input"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                            <label className="form-label">
                                                 Last Name *
                                             </label>
                                             <input
@@ -251,14 +251,14 @@ const Checkout = () => {
                                                 value={formData.lastName}
                                                 onChange={handleInputChange}
                                                 placeholder="Doe"
-                                                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all"
+                                                className="form-input"
                                             />
                                         </div>
                                     </div>
 
                                     {/* Street Address */}
                                     <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                        <label className="form-label">
                                             Street Address *
                                         </label>
                                         <input
@@ -268,13 +268,13 @@ const Checkout = () => {
                                             value={formData.address}
                                             onChange={handleInputChange}
                                             placeholder="123 Broadway Avenue"
-                                            className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all"
+                                            className="form-input"
                                         />
                                     </div>
 
                                     {/* Apartment / Suite */}
                                     <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                        <label className="form-label">
                                             Apartment, suite, unit (optional)
                                         </label>
                                         <input
@@ -283,14 +283,14 @@ const Checkout = () => {
                                             value={formData.apartment}
                                             onChange={handleInputChange}
                                             placeholder="Apt 4B"
-                                            className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all"
+                                            className="form-input"
                                         />
                                     </div>
 
                                     {/* City & Postal Code */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                            <label className="form-label">
                                                 City *
                                             </label>
                                             <input
@@ -300,11 +300,11 @@ const Checkout = () => {
                                                 value={formData.city}
                                                 onChange={handleInputChange}
                                                 placeholder="New York"
-                                                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all"
+                                                className="form-input"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                            <label className="form-label">
                                                 Postal / ZIP Code *
                                             </label>
                                             <input
@@ -314,14 +314,14 @@ const Checkout = () => {
                                                 value={formData.postalCode}
                                                 onChange={handleInputChange}
                                                 placeholder="10001"
-                                                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all"
+                                                className="form-input"
                                             />
                                         </div>
                                     </div>
 
                                     {/* Phone Number */}
                                     <div>
-                                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                                        <label className="form-label">
                                             Phone Number *
                                         </label>
                                         <input
@@ -331,7 +331,7 @@ const Checkout = () => {
                                             value={formData.phone}
                                             onChange={handleInputChange}
                                             placeholder="+1 (555) 234-5678"
-                                            className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm transition-all"
+                                            className="form-input"
                                         />
                                     </div>
 
@@ -341,7 +341,7 @@ const Checkout = () => {
                                             name="saveInfo"
                                             checked={formData.saveInfo}
                                             onChange={handleInputChange}
-                                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black accent-black"
+                                            className="form-checkbox"
                                         />
                                         <span>Save this information for a faster checkout next time</span>
                                     </label>
@@ -349,10 +349,10 @@ const Checkout = () => {
                             </div>
 
                             {/* Shipping Method */}
-                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                            <div className="card-padded p-6">
                                 <div className="flex items-center gap-2 mb-4">
                                     <Truck className="w-5 h-5 text-gray-700" />
-                                    <h2 className="text-lg font-bold text-gray-900">
+                                    <h2 className="card-title">
                                         Shipping Method
                                     </h2>
                                 </div>
@@ -429,10 +429,10 @@ const Checkout = () => {
                             </div>
 
                             {/* Payment Method */}
-                            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs">
+                            <div className="card-padded p-6">
                                 <div className="flex items-center gap-2 mb-2">
                                     <CreditCard className="w-5 h-5 text-gray-700" />
-                                    <h2 className="text-lg font-bold text-gray-900">
+                                    <h2 className="card-title">
                                         Payment Method
                                     </h2>
                                 </div>
@@ -536,7 +536,7 @@ const Checkout = () => {
                                         {paymentMethod === "card" && (
                                             <div className="p-4 border-t border-gray-100 space-y-3 bg-white rounded-b-xl">
                                                 <div>
-                                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+                                                    <label className="form-label">
                                                         Card Number
                                                     </label>
                                                     <input
@@ -546,12 +546,12 @@ const Checkout = () => {
                                                             setCardData({ ...cardData, cardNumber: e.target.value })
                                                         }
                                                         placeholder="4242 •••• •••• 4242"
-                                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black font-mono"
+                                                        className="form-input font-mono"
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div>
-                                                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+                                                        <label className="form-label">
                                                             Expiration (MM/YY)
                                                         </label>
                                                         <input
@@ -561,11 +561,11 @@ const Checkout = () => {
                                                                 setCardData({ ...cardData, expiry: e.target.value })
                                                             }
                                                             placeholder="MM/YY"
-                                                            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black font-mono"
+                                                            className="form-input font-mono"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+                                                        <label className="form-label">
                                                             Security Code (CVV)
                                                         </label>
                                                         <input
@@ -575,7 +575,7 @@ const Checkout = () => {
                                                                 setCardData({ ...cardData, cvv: e.target.value })
                                                             }
                                                             placeholder="123"
-                                                            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black font-mono"
+                                                            className="form-input font-mono"
                                                         />
                                                     </div>
                                                 </div>
@@ -658,11 +658,11 @@ const Checkout = () => {
 
                         {/* ================= RIGHT COLUMN: ORDER SUMMARY ================= */}
                         <div className="lg:col-span-5">
-                            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs sticky top-28 space-y-6">
+                            <div className="card-padded sticky top-28 space-y-6">
                                 <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                                     <div className="flex items-center gap-2">
                                         <ShoppingBag className="w-5 h-5 text-gray-700" />
-                                        <h3 className="font-bold text-lg text-gray-900">
+                                        <h3 className="card-title">
                                             Order Summary
                                         </h3>
                                     </div>

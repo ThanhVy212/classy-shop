@@ -119,10 +119,10 @@ const UserManagement = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+                        <h1 className="page-title">
                             Users Management
                         </h1>
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-200 text-gray-800">
+                        <span className="badge-counter">
                             {users.length} registered
                         </span>
                     </div>
@@ -133,7 +133,7 @@ const UserManagement = () => {
 
                 <Button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="btn-black px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 self-start sm:self-auto"
+                    className="btn-primary-action self-start sm:self-auto"
                 >
                     <UserPlus className="w-4 h-4" />
                     <span>Add New User</span>
@@ -149,7 +149,7 @@ const UserManagement = () => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search by name or email address..."
-                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                        className="admin-search-input"
                     />
                 </div>
 
@@ -158,7 +158,7 @@ const UserManagement = () => {
                     <select
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
-                        className="w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                        className="admin-filter-select"
                     >
                         <option value="all">All Roles</option>
                         <option value="admin">Administrators</option>
@@ -168,10 +168,10 @@ const UserManagement = () => {
             </div>
 
             {/* Users Table */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+            <div className="card-container">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-gray-600">
-                        <thead className="bg-gray-50/70 text-xs uppercase text-gray-500 font-semibold border-b border-gray-100">
+                        <thead className="table-head-row">
                             <tr>
                                 <th className="py-3.5 px-5">User</th>
                                 <th className="py-3.5 px-5">Email Address</th>
@@ -184,7 +184,7 @@ const UserManagement = () => {
                         <tbody className="divide-y divide-gray-100">
                             {filteredUsers.length > 0 ? (
                                 filteredUsers.map((user) => (
-                                    <tr key={user._id} className="hover:bg-gray-50/80 transition-colors">
+                                    <tr key={user._id} className="table-row-hover">
                                         <td className="py-4 px-5">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-full bg-gray-900 text-white font-bold flex items-center justify-center text-xs shrink-0">
@@ -208,11 +208,11 @@ const UserManagement = () => {
                                         </td>
                                         <td className="py-4 px-5 whitespace-nowrap">
                                             {user.role === "admin" ? (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                                <span className="status-badge status-badge-purple">
                                                     <Shield className="w-3 h-3" /> Admin
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                                                <span className="status-badge status-badge-neutral">
                                                     <UserCheck className="w-3 h-3" /> Customer
                                                 </span>
                                             )}
@@ -238,7 +238,7 @@ const UserManagement = () => {
                                         <td className="py-4 px-5 text-right whitespace-nowrap">
                                             <button
                                                 onClick={() => handleDeleteUser(user._id, user.name)}
-                                                className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition cursor-pointer"
+                                                className="btn-action-delete"
                                                 title="Delete user account"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -257,7 +257,7 @@ const UserManagement = () => {
                     </table>
                 </div>
 
-                <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                <div className="table-footer">
                     <span>
                         Showing {filteredUsers.length} of {users.length} users
                     </span>
@@ -270,7 +270,7 @@ const UserManagement = () => {
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-900">Add New User</h3>
+                            <h3 className="card-title">Add New User</h3>
                             <button
                                 onClick={() => setIsAddModalOpen(false)}
                                 className="text-gray-400 hover:text-black p-1"
@@ -281,7 +281,7 @@ const UserManagement = () => {
 
                         <form onSubmit={handleCreateUser} className="space-y-4 pt-4">
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+                                <label className="form-label">
                                     Full Name *
                                 </label>
                                 <input
@@ -292,12 +292,12 @@ const UserManagement = () => {
                                         setNewUserForm({ ...newUserForm, name: e.target.value })
                                     }
                                     placeholder="Jane Doe"
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                    className="form-input"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+                                <label className="form-label">
                                     Email Address *
                                 </label>
                                 <input
@@ -308,12 +308,12 @@ const UserManagement = () => {
                                         setNewUserForm({ ...newUserForm, email: e.target.value })
                                     }
                                     placeholder="jane@example.com"
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                    className="form-input"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
+                                <label className="form-label">
                                     Account Role
                                 </label>
                                 <select
@@ -324,7 +324,7 @@ const UserManagement = () => {
                                             role: e.target.value as "admin" | "customer",
                                         })
                                     }
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                                    className="form-select"
                                 >
                                     <option value="customer">Customer (Standard)</option>
                                     <option value="admin">Administrator (Full Access)</option>
@@ -335,7 +335,7 @@ const UserManagement = () => {
                                 <button
                                     type="button"
                                     onClick={() => setIsAddModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                                    className="btn-outline py-2 text-xs"
                                 >
                                     Cancel
                                 </button>

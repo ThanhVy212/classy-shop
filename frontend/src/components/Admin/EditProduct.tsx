@@ -138,7 +138,7 @@ const EditProduct = () => {
                         <ArrowLeft className="w-4 h-4 mr-1.5" />
                         Back to Products List
                     </Link>
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+                    <h1 className="page-title">
                         {isEditMode ? `Edit Product #${id}` : "Create New Product"}
                     </h1>
                 </div>
@@ -147,7 +147,7 @@ const EditProduct = () => {
                     <Link to="/admin/products">
                         <button
                             type="button"
-                            className="px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                            className="btn-outline"
                         >
                             Cancel
                         </button>
@@ -156,7 +156,7 @@ const EditProduct = () => {
                     <Button
                         type="button"
                         onClick={handleSubmit}
-                        className="btn-black px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+                        className="btn-primary-action px-5"
                     >
                         <Save className="w-4 h-4" />
                         <span>{isEditMode ? "Save Changes" : "Publish Product"}</span>
@@ -166,13 +166,13 @@ const EditProduct = () => {
 
             <form onSubmit={handleSubmit} className="space-y-8">
                 {/* 1. Basic Information */}
-                <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xs space-y-5">
-                    <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">
+                <div className="card-padded space-y-5">
+                    <h2 className="card-title border-b border-gray-100 pb-3">
                         Basic Information
                     </h2>
 
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                        <label className="form-label">
                             Product Name *
                         </label>
                         <input
@@ -182,13 +182,13 @@ const EditProduct = () => {
                             value={formData.name}
                             onChange={handleInputChange}
                             placeholder="e.g. Classic Oversized Denim Jacket"
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                            className="form-input"
                         />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                            <label className="form-label">
                                 SKU / Stock Keeping Unit *
                             </label>
                             <input
@@ -198,12 +198,12 @@ const EditProduct = () => {
                                 value={formData.sku}
                                 onChange={handleInputChange}
                                 placeholder="e.g. JKT-001"
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-black"
+                                className="form-input font-mono"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                            <label className="form-label">
                                 Brand
                             </label>
                             <input
@@ -212,13 +212,13 @@ const EditProduct = () => {
                                 value={formData.brand}
                                 onChange={handleInputChange}
                                 placeholder="ClassyShop"
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                className="form-input"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                        <label className="form-label">
                             Description
                         </label>
                         <textarea
@@ -227,20 +227,20 @@ const EditProduct = () => {
                             value={formData.description}
                             onChange={handleInputChange}
                             placeholder="Detailed product description, fit, care instructions..."
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                            className="form-input"
                         />
                     </div>
                 </div>
 
                 {/* 2. Pricing & Category & Inventory */}
-                <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xs space-y-5">
-                    <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">
+                <div className="card-padded space-y-5">
+                    <h2 className="card-title border-b border-gray-100 pb-3">
                         Pricing, Category &amp; Stock
                     </h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                         <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                            <label className="form-label">
                                 Selling Price ($) *
                             </label>
                             <div className="relative">
@@ -262,7 +262,7 @@ const EditProduct = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                            <label className="form-label">
                                 Original Price ($)
                             </label>
                             <div className="relative">
@@ -283,7 +283,7 @@ const EditProduct = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                            <label className="form-label">
                                 Inventory Quantity *
                             </label>
                             <input
@@ -294,21 +294,21 @@ const EditProduct = () => {
                                 value={formData.stock}
                                 onChange={handleInputChange}
                                 placeholder="25"
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                className="form-input"
                             />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
                         <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                            <label className="form-label">
                                 Collection / Category *
                             </label>
                             <select
                                 name="category"
                                 value={formData.category}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                                className="form-select"
                             >
                                 <option value="Men">Men</option>
                                 <option value="Women">Women</option>
@@ -318,7 +318,7 @@ const EditProduct = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+                            <label className="form-label">
                                 Fabric &amp; Material
                             </label>
                             <input
@@ -327,21 +327,21 @@ const EditProduct = () => {
                                 value={formData.material}
                                 onChange={handleInputChange}
                                 placeholder="100% Cotton, Denim, Silk"
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                                className="form-input"
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* 3. Variants: Sizes & Colors */}
-                <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xs space-y-6">
-                    <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">
+                <div className="card-padded space-y-6">
+                    <h2 className="card-title border-b border-gray-100 pb-3">
                         Product Variants
                     </h2>
 
                     {/* Sizes Selection */}
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">
+                        <label className="form-label mb-2">
                             Select Available Sizes
                         </label>
                         <div className="flex flex-wrap gap-2.5">
@@ -367,7 +367,7 @@ const EditProduct = () => {
 
                     {/* Colors Selection */}
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-2">
+                        <label className="form-label mb-2">
                             Select Available Colors
                         </label>
                         <div className="flex flex-wrap gap-3">
@@ -398,9 +398,9 @@ const EditProduct = () => {
                 </div>
 
                 {/* 4. Product Gallery */}
-                <div className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xs space-y-6">
+                <div className="card-padded space-y-6">
                     <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                        <h2 className="text-lg font-bold text-gray-900">Product Images Gallery</h2>
+                        <h2 className="card-title">Product Images Gallery</h2>
                     </div>
 
                     {/* Image URL input */}
@@ -410,7 +410,7 @@ const EditProduct = () => {
                             value={imageUrlInput}
                             onChange={(e) => setImageUrlInput(e.target.value)}
                             placeholder="Paste high-res image URL (e.g. https://...)"
-                            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                            className="form-input flex-1"
                         />
                         <button
                             type="button"

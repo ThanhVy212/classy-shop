@@ -20,7 +20,7 @@ const Register = () => {
             <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12">
                 <form
                     onSubmit={handleSubmit}
-                    className="w-full max-w-md bg-white p-8 rounded-lg border border-gray-200 shadow-sm"
+                    className="auth-card"
                 >
                     <div className="flex justify-center items-center gap-2 mb-6">
                         <img src={logo} alt="ClassyShop logo" className="w-14 h-14 object-contain" />
@@ -31,40 +31,38 @@ const Register = () => {
                         Create your account to get started.
                     </p>
                     <div className="mb-4">
-                        <label className="block text-sm font-semibold mb-2">Name</label>
+                        <label className="form-label">Name</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full p-2 border border-gray-200 rounded"
+                            className="form-input"
                             placeholder="Enter your Name"
                         />
                     </div>
                     <div className="mb-4">
-                        <label className="block text-sm font-semibold mb-2">Email</label>
+                        <label className="form-label">Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full p-2 border border-gray-200 rounded"
+                            className="form-input"
                             placeholder="Enter your email address"
                         />
                     </div>
                     <div className="mb-4">
-                        <label className="block text-sm font-semibold mb-2">Email</label>
+                        <label className="form-label">Password</label>
                         <input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full p-2 border border-gray-200 rounded"
+                            className="form-input"
                             placeholder="Enter your password"
                         />
                     </div>
                     <Button
                         type="submit"
-                        className="w-full bg-black text-white p-2 rounded-lg font-semibold
-                        hover:bg-gray-800
-                        transition"
+                        className="btn-auth-submit"
                     >
                         Sign Up
                     </Button>
