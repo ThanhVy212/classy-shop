@@ -1,7 +1,3 @@
+import AdminLayout from "../Admin/AdminLayout.tsx";
 
-const AdminLayout = () => {
-    return (
-        <div>AdminLayout</div>
-    )
-}
-export default AdminLayout
+export default AdminLayout;

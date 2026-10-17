@@ -2,9 +2,17 @@ import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import CartContent from "../Cart/CartContent.tsx";
 import Button from "../Common/Button.tsx";
+import {useNavigate} from "react-router-dom";
 
 const CartDrawer = ({ drawerOpen, toggleCartDrawer }: CartDrawerProps) => {
+    const navigate = useNavigate();
+
     if (typeof document === "undefined") return null;
+
+    const handleCheckout = () => {
+        toggleCartDrawer();
+        navigate("/checkout");
+    }
 
     return createPortal(
         <>
@@ -36,7 +44,10 @@ const CartDrawer = ({ drawerOpen, toggleCartDrawer }: CartDrawerProps) => {
 
                 {/* Checkout button fixed at the bottom */}
                 <div className="p-4 bg-white border-t border-gray-100 mt-auto shrink-0">
-                    <Button className="btn-black w-full py-3 rounded-lg font-semibold">
+                    <Button
+                        onClick={handleCheckout}
+                        className="btn-black w-full py-3 rounded-lg font-semibold"
+                    >
                         Checkout
                     </Button>
 

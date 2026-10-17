@@ -1,6 +1,8 @@
 import {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
 
 const MyOrders = () => {
+    const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
 
     useEffect(() => {
@@ -69,6 +71,7 @@ const MyOrders = () => {
                             orders.map((order) => (
                                 <tr
                                     key={order._id}
+                                    onClick={() => navigate(`/order/${order._id}`)}
                                     className="
                                         border-b border-gray-200
                                         cursor-pointer
