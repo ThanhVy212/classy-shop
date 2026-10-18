@@ -7,8 +7,10 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import Button from "./Button.tsx";
 import logo from "../../assets/logo.svg";
+import { useAuth } from "../../hooks/useAuth.ts";
 
 const Navbar = () => {
+    const { user, isAuthenticated } = useAuth();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [navDrawerOpen, setNavDrawerOpen] = useState(false);
 
@@ -50,8 +52,17 @@ const Navbar = () => {
 
                 {/* Right - Icons */}
                 <div className="flex items-center space-x-3 sm:space-x-4">
-                    <Link to="/profile" aria-label="Profile">
-                        <UserRound className="h-5 w-5 text-gray-600 hover:text-black transition-colors" />
+                    <Link
+                        to={isAuthenticated ? "/profile" : "/login"}
+                        aria-label="Profile"
+                        className="group flex items-center gap-1.5 sm:gap-2 transition-colors"
+                    >
+                        <UserRound className="h-5 w-5 text-gray-600 group-hover:text-black transition-colors shrink-0" />
+                        {isAuthenticated && user?.name && (
+                            <span className="text-sm font-medium text-gray-700 group-hover:text-black transition-colors max-w-[90px] sm:max-w-[130px] md:max-w-[160px] truncate">
+                                {user.name}
+                            </span>
+                        )}
                     </Link>
 
                     <Button onClick={toggleDrawer} className="relative cursor-pointer" aria-label="Cart">
@@ -108,6 +119,28 @@ const Navbar = () => {
                                         </Link>
                                     ))}
                                 </nav>
+
+                                <div className="pt-6 mt-6 border-t border-gray-100">
+                                    {isAuthenticated && user ? (
+                                        <Link
+                                            to="/profile"
+                                            onClick={toggleNavDrawer}
+                                            className="flex items-center gap-2.5 text-gray-700 hover:text-black font-medium text-sm transition-colors py-1"
+                                        >
+                                            <UserRound className="h-5 w-5 text-gray-600 shrink-0" />
+                                            <span className="truncate">{user.name}</span>
+                                        </Link>
+                                    ) : (
+                                        <Link
+                                            to="/login"
+                                            onClick={toggleNavDrawer}
+                                            className="flex items-center gap-2.5 text-gray-700 hover:text-black font-medium text-sm transition-colors py-1"
+                                        >
+                                            <UserRound className="h-5 w-5 text-gray-600 shrink-0" />
+                                            <span>Đăng nhập / Đăng ký</span>
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </>,

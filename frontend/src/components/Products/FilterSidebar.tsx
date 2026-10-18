@@ -235,7 +235,7 @@ const FilterSidebar = () => {
                     <button
                         type="button"
                         onClick={handleResetFilters}
-                        className="text-xs text-rabbit-red hover:underline cursor-pointer font-medium"
+                        className="text-xs text-red-600 hover:underline cursor-pointer font-medium"
                     >
                         Clear All
                     </button>

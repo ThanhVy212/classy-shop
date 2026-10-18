@@ -4,6 +4,7 @@ import AdminLayout from "./components/Layout/AdminLayout.tsx";
 import Home from "./pages/Home.tsx";
 import { useEffect } from "react";
 import {Toaster} from "sonner";
+import { AuthProvider } from "./context/AuthContext.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import Profile from "./pages/Profile.tsx";
@@ -56,29 +57,31 @@ const App = () => {
     }, []);
 
     return (
-        <BrowserRouter>
-            <Toaster position="top-right" />
-            <Routes>
-                <Route path="/" element={<UserLayout/>}>
-                    <Route index element={<Home />} />
-                    <Route path="/login" element={<Login />}/>
-                    <Route path="/register" element={<Register />}/>
-                    <Route path="/profile" element={<Profile />}/>
-                    <Route path="/collections/:collection" element={<Collection />}/>
-                    <Route path="/products/:id" element={<ProductDetails />}/>
-                    <Route path="/checkout" element={<Checkout />}/>
-                    <Route path="/order/:id" element={<OrderDetails />}/>
-                </Route>
-                <Route path="/admin" element={<AdminLayout />}>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="products" element={<ProductManagement />} />
-                    <Route path="products/new" element={<EditProduct />} />
-                    <Route path="products/:id/edit" element={<EditProduct />} />
-                    <Route path="orders" element={<OrderManagement />} />
-                    <Route path="users" element={<UserManagement />} />
-                </Route>
-            </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+            <BrowserRouter>
+                <Toaster position="top-right" />
+                <Routes>
+                    <Route path="/" element={<UserLayout/>}>
+                        <Route index element={<Home />} />
+                        <Route path="/login" element={<Login />}/>
+                        <Route path="/register" element={<Register />}/>
+                        <Route path="/profile" element={<Profile />}/>
+                        <Route path="/collections/:collection" element={<Collection />}/>
+                        <Route path="/products/:id" element={<ProductDetails />}/>
+                        <Route path="/checkout" element={<Checkout />}/>
+                        <Route path="/order/:id" element={<OrderDetails />}/>
+                    </Route>
+                    <Route path="/admin" element={<AdminLayout />}>
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="products" element={<ProductManagement />} />
+                        <Route path="products/new" element={<EditProduct />} />
+                        <Route path="products/:id/edit" element={<EditProduct />} />
+                        <Route path="orders" element={<OrderManagement />} />
+                        <Route path="users" element={<UserManagement />} />
+                    </Route>
+                </Routes>
+            </BrowserRouter>
+        </AuthProvider>
     );
 };
 

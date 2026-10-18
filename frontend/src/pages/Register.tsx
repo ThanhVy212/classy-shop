@@ -1,25 +1,55 @@
-import {useState} from "react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import logo from "../assets/logo.svg";
 import Button from "../components/Common/Button.tsx";
-import {Link} from "react-router-dom";
 import registerPlaceholder from "../assets/register.webp";
+import OAutGoogle from "../components/Common/OAuth.tsx";
+import { registerSchema, type RegisterFormData } from "../validations/auth.ts";
+import { useAuth } from "../hooks/useAuth.ts";
+import { getApiErrorMessage } from "../services/authService.ts";
 
 const Register = () => {
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const navigate = useNavigate();
+    const { register: registerAuth } = useAuth();
+    const [serverError, setServerError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        console.log("Register information:",name, email, password);
-    }
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+    } = useForm<RegisterFormData>({
+        resolver: zodResolver(registerSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            password: "",
+        },
+    });
 
+    const onSubmit = async (data: RegisterFormData) => {
+        try {
+            setServerError(null);
+            const res = await registerAuth(data);
+            toast.success(res.message || "Registration successful!");
+            navigate("/", { replace: true });
+        } catch (error) {
+            const message = getApiErrorMessage(error, "Failed to register account. Please try again.");
+            setServerError(message);
+            toast.error(message);
+        }
+    };
 
     return (
         <div className="flex">
             <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12">
                 <form
-                    onSubmit={handleSubmit}
+                    onSubmit={handleSubmit(onSubmit)}
+                    noValidate
                     className="auth-card"
                 >
                     <div className="flex justify-center items-center gap-2 mb-6">
@@ -27,48 +57,88 @@ const Register = () => {
                         <h2 className="text-2xl font-medium">ClassyShop</h2>
                     </div>
                     <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
-                    <p className="text-center mb-6">
+                    <p className="text-center mb-6 text-gray-600">
                         Create your account to get started.
                     </p>
+
+                    {serverError && (
+                        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+                            {serverError}
+                        </div>
+                    )}
+
                     <div className="mb-4">
-                        <label className="form-label">Name</label>
+                        <label className="form-label" htmlFor="name">Name</label>
                         <input
+                            id="name"
                             type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="form-input"
+                            {...register("name")}
+                            className={`form-input ${errors.name ? "border-red-500 focus:ring-red-500" : ""}`}
                             placeholder="Enter your Name"
+                            aria-invalid={errors.name ? "true" : "false"}
                         />
+                        {errors.name && (
+                            <p className="mt-1.5 text-xs text-red-500 font-medium">
+                                {errors.name.message}
+                            </p>
+                        )}
                     </div>
                     <div className="mb-4">
-                        <label className="form-label">Email</label>
+                        <label className="form-label" htmlFor="email">Email</label>
                         <input
+                            id="email"
                             type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="form-input"
+                            {...register("email")}
+                            className={`form-input ${errors.email ? "border-red-500 focus:ring-red-500" : ""}`}
                             placeholder="Enter your email address"
+                            aria-invalid={errors.email ? "true" : "false"}
                         />
+                        {errors.email && (
+                            <p className="mt-1.5 text-xs text-red-500 font-medium">
+                                {errors.email.message}
+                            </p>
+                        )}
                     </div>
                     <div className="mb-4">
-                        <label className="form-label">Password</label>
+                        <label className="form-label" htmlFor="password">Password</label>
                         <input
+                            id="password"
                             type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="form-input"
+                            {...register("password")}
+                            className={`form-input ${errors.password ? "border-red-500 focus:ring-red-500" : ""}`}
                             placeholder="Enter your password"
+                            aria-invalid={errors.password ? "true" : "false"}
                         />
+                        {errors.password && (
+                            <p className="mt-1.5 text-xs text-red-500 font-medium">
+                                {errors.password.message}
+                            </p>
+                        )}
                     </div>
+
                     <Button
                         type="submit"
-                        className="btn-auth-submit"
+                        disabled={isSubmitting}
+                        className="btn-auth-submit flex items-center justify-center gap-2"
                     >
-                        Sign Up
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Creating Account...</span>
+                            </>
+                        ) : (
+                            "Sign Up"
+                        )}
                     </Button>
+
+                    {/* Google OAuth Button */}
+                    <div className="my-4">
+                        <OAutGoogle />
+                    </div>
+
                     <p className="mt-6 text-center text-sm">
                         Already have an account?{" "}
-                        <Link to="/login" className="text-blue-500">
+                        <Link to="/login" className="text-blue-500 hover:underline">
                             Login
                         </Link>
                     </p>
@@ -85,6 +155,7 @@ const Register = () => {
                 </div>
             </div>
         </div>
-    )
-}
-export default Register
+    );
+};
+
+export default Register;

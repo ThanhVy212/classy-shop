@@ -1,17 +1,49 @@
+import { useNavigate } from "react-router-dom";
 import MyOrders from "./MyOrders.tsx";
+import { useAuth } from "../hooks/useAuth.ts";
+import { toast } from "sonner";
 
 const Profile = () => {
+    const { user, logout, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            toast.success("Logged out successfully");
+            navigate("/login");
+        } catch {
+            toast.error("Failed to log out");
+        }
+    };
+
     return (
         <div className="min-h-screen flex flex-col">
             <div className="flex-row container mx-auto p-4 md:p-6">
                 <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
                     {/* Left Section */}
-                    <div className="w-full md:w-1/3 lg:w-1/4 shadow-md rounded-lg p-6">
-                        <h1 className="text-2xl md:text-3xl font-bold mb-4">John Doe</h1>
-                        <p className="text-lg text-gray-600 mb-4">John@example.com</p>
-                        <button className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600">
-                            Logout
-                        </button>
+                    <div className="w-full md:w-1/3 lg:w-1/4 shadow-md rounded-lg p-6 bg-white border border-gray-100">
+                        <h1 className="text-2xl md:text-3xl font-bold mb-4">
+                            {user?.name || "Guest User"}
+                        </h1>
+                        <p className="text-lg text-gray-600 mb-6">
+                            {user?.email || "No email available"}
+                        </p>
+                        {isAuthenticated ? (
+                            <button
+                                onClick={handleLogout}
+                                className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 cursor-pointer transition-colors"
+                            >
+                                Logout
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => navigate("/login")}
+                                className="w-full bg-black text-white py-2 px-4 rounded hover:bg-gray-800 cursor-pointer transition-colors"
+                            >
+                                Sign In
+                            </button>
+                        )}
                     </div>
                     {/* Right Section: Orders table */}
                     <div className="w-full md:w-2/3 lg:w-3/4">
@@ -21,5 +53,5 @@ const Profile = () => {
             </div>
         </div>
     );
-}
-export default Profile
+};
+export default Profile;

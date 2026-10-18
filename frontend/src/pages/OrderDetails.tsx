@@ -270,7 +270,7 @@ const OrderDetails = () => {
                                             <div className="min-w-0">
                                                 <Link
                                                     to={`/products/${item.productId}`}
-                                                    className="font-semibold text-gray-900 hover:text-rabbit-red transition-colors text-sm sm:text-base line-clamp-1"
+                                                    className="font-semibold text-gray-900 hover:text-red-600 transition-colors text-sm sm:text-base line-clamp-1"
                                                 >
                                                     {item.name}
                                                 </Link>
@@ -441,7 +441,7 @@ const OrderDetails = () => {
                                     </p>
                                     <a
                                         href="mailto:support@classyshop.com"
-                                        className="inline-block mt-3 text-xs font-semibold text-rabbit-red hover:underline"
+                                        className="inline-block mt-3 text-xs font-semibold text-red-600 hover:underline"
                                     >
                                         support@classyshop.com
                                     </a>

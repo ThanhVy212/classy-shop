@@ -244,7 +244,7 @@ const AdminDashboard = () => {
                         </div>
                         <Link
                             to="/admin/orders"
-                            className="text-xs font-semibold text-black hover:text-rabbit-red flex items-center gap-1 transition"
+                            className="text-xs font-semibold text-black hover:text-red-600 flex items-center gap-1 transition"
                         >
                             <span>View all orders</span>
                             <ArrowRight className="w-3.5 h-3.5" />
@@ -307,7 +307,7 @@ const AdminDashboard = () => {
                         </div>
                         <Link
                             to="/admin/products"
-                            className="text-xs font-semibold text-black hover:text-rabbit-red transition"
+                            className="text-xs font-semibold text-black hover:text-red-600 transition"
                         >
                             Manage
                         </Link>

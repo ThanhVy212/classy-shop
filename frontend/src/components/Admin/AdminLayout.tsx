@@ -149,7 +149,7 @@ const AdminLayout = () => {
                             aria-label="Notifications"
                         >
                             <Bell className="w-5 h-5" />
-                            <span className="w-2 h-2 rounded-full bg-rabbit-red absolute top-1.5 right-1.5" />
+                            <span className="w-2 h-2 rounded-full bg-red-600 absolute top-1.5 right-1.5" />
                         </button>
 
                         <div className="flex items-center gap-2.5 pl-3 border-l border-gray-200">

@@ -298,7 +298,7 @@ const ProductManagement = () => {
                                                 setSelectedCategory("all");
                                                 setStockFilter("all");
                                             }}
-                                            className="text-xs text-rabbit-red font-semibold underline mt-2 cursor-pointer"
+                                            className="text-xs text-red-600 font-semibold underline mt-2 cursor-pointer"
                                         >
                                             Reset filters
                                         </button>

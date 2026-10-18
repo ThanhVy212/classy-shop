@@ -1,9 +1,5 @@
 @import "tailwindcss";
 
-@theme {
-  --color-rabbit-red: #ea2e0e;
-}
-
 .root {
   font-family: "Inter", sans-serif;
   font-optical-sizing: auto;
@@ -213,7 +209,7 @@
      6. Badges & Status Pills
      ========================================================================== */
   .badge-red {
-    @apply bg-rabbit-red text-white text-xs rounded-full px-2 py-0.5;
+    @apply bg-red-600 text-white text-xs rounded-full px-2 py-0.5;
   }
 
   .badge-counter {
