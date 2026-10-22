@@ -48,3 +48,43 @@ export const isAdmin = (req, res, next) => {
     res.status(403).json({ message: "Not authorized as an admin" });
   }
 };
+
+// Optional authentication middleware (for guest or logged in user)
+export const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET,
+      async (err, decodedUser) => {
+        if (err) {
+          console.log(err);
+          return res
+            .status(403)
+            .json({ message: "Access token is invalid or expired" });
+        }
+
+        const user = await User.findById(decodedUser.userId).select(
+          "-passwordHash",
+        );
+
+        if (!user) {
+          return res.status(404).json({ message: "User does not exist" });
+        }
+
+        req.user = user;
+        next();
+      },
+    );
+  } catch (e) {
+    console.error("JWT verification error in optionalAuth", e);
+    return res.status(500).json({ message: "Failed to authenticate" });
+  }
+};
