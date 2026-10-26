@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
     ArrowLeft,
@@ -9,16 +9,33 @@ import {
 } from "lucide-react";
 import Button from "../Common/Button.tsx";
 import { toast } from "sonner";
+import { productService } from "../../services/productService.ts";
+import { getColorStyle, getColorHex } from "../../utils/colors.ts";
 
 const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "30", "32", "34"];
 const AVAILABLE_COLORS = [
     { name: "Black", hex: "#000000" },
     { name: "White", hex: "#ffffff" },
     { name: "Red", hex: "#ef4444" },
-    { name: "Blue", hex: "#3b82f6" },
+    { name: "Blue", hex: "#2563eb" },
+    { name: "Navy Blue", hex: "#001f3f" },
+    { name: "Navy", hex: "#000080" },
+    { name: "Burgundy", hex: "#800020" },
+    { name: "Light Blue", hex: "#93c5fd" },
+    { name: "Dark Blue", hex: "#172554" },
     { name: "Green", hex: "#10b981" },
-    { name: "Beige", hex: "#f5f5dc" },
+    { name: "Dark Green", hex: "#14532d" },
+    { name: "Olive", hex: "#556b2f" },
+    { name: "Yellow", hex: "#eab308" },
     { name: "Gray", hex: "#6b7280" },
+    { name: "Charcoal", hex: "#374151" },
+    { name: "Beige", hex: "#d4b996" },
+    { name: "Brown", hex: "#78350f" },
+    { name: "Pink", hex: "#ec4899" },
+    { name: "Khaki", hex: "#c3b091" },
+    { name: "Lavender", hex: "#c084fc" },
+    { name: "Champagne", hex: "#f7e7ce" },
+    { name: "Cream", hex: "#fffdd0" },
 ];
 
 const EditProduct = () => {
@@ -49,6 +66,45 @@ const EditProduct = () => {
     }));
 
     const [imageUrlInput, setImageUrlInput] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (isEditMode && id) {
+            productService
+                .getProductById(id)
+                .then((prod) => {
+                    if (prod) {
+                        setFormData({
+                            name: prod.name || "",
+                            sku: prod.sku || "",
+                            description: prod.description || "",
+                            category: prod.category || "Top Wear",
+                            brand: prod.brand || "ClassyShop",
+                            material: prod.material || "100% Organic Cotton",
+                            price: prod.price !== undefined ? String(prod.price) : "",
+                            originalPrice:
+                                prod.discountPrice !== undefined ? String(prod.discountPrice) : "",
+                            stock:
+                                prod.countInStock !== undefined
+                                    ? String(prod.countInStock)
+                                    : "10",
+                            sizes: prod.sizes && prod.sizes.length > 0 ? prod.sizes : ["M"],
+                            colors:
+                                prod.colors && prod.colors.length > 0 ? prod.colors : ["Black"],
+                            images:
+                                prod.images && prod.images.length > 0
+                                    ? prod.images.map((img) => img.url)
+                                    : prod.image
+                                    ? [prod.image]
+                                    : [],
+                        });
+                    }
+                })
+                .catch((err) => {
+                    console.warn("Could not fetch product for edit:", err);
+                });
+        }
+    }, [isEditMode, id]);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -74,6 +130,16 @@ const EditProduct = () => {
                 : [...prev.colors, colorName],
         }));
     };
+
+    const displayedColors = React.useMemo(() => {
+        const list = [...AVAILABLE_COLORS];
+        formData.colors.forEach((c) => {
+            if (!list.some((item) => item.name.toLowerCase() === c.toLowerCase())) {
+                list.push({ name: c, hex: getColorHex(c) });
+            }
+        });
+        return list;
+    }, [formData.colors]);
 
     const handleAddImage = (e: React.FormEvent) => {
         e.preventDefault();
@@ -108,7 +174,7 @@ const EditProduct = () => {
         toast.info("Added 2 sample high-res product photos");
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.name.trim() || !formData.price) {
@@ -116,14 +182,39 @@ const EditProduct = () => {
             return;
         }
 
-        console.log("Saving product data:", formData);
-        toast.success(
-            isEditMode
-                ? `Product "${formData.name}" updated successfully!`
-                : `New product "${formData.name}" created successfully!`
-        );
+        setIsSaving(true);
+        try {
+            const productPayload = {
+                name: formData.name.trim(),
+                sku: formData.sku.trim() || `SKU-${Date.now()}`,
+                description: formData.description.trim() || formData.name.trim(),
+                category: formData.category,
+                brand: formData.brand.trim() || "ClassyShop",
+                material: formData.material.trim() || "Cotton",
+                price: Number(formData.price) || 0,
+                discountPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
+                countInStock: Number(formData.stock) || 0,
+                sizes: formData.sizes.length > 0 ? formData.sizes : ["M"],
+                colors: formData.colors.length > 0 ? formData.colors : ["Black"],
+                collections: "Business Casual",
+                images: formData.images.map((url) => ({ url, altText: formData.name })),
+            };
 
-        navigate("/admin/products");
+            if (isEditMode && id) {
+                await productService.updateProduct(id, productPayload);
+                toast.success(`Product "${formData.name}" updated successfully!`);
+            } else {
+                await productService.createProduct(productPayload);
+                toast.success(`New product "${formData.name}" created successfully!`);
+            }
+
+            navigate("/admin/products");
+        } catch (error) {
+            console.error("Save product error:", error);
+            toast.error("Failed to save product. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -156,10 +247,17 @@ const EditProduct = () => {
                     <Button
                         type="button"
                         onClick={handleSubmit}
-                        className="btn-primary-action px-5"
+                        disabled={isSaving}
+                        className="btn-primary-action px-5 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         <Save className="w-4 h-4" />
-                        <span>{isEditMode ? "Save Changes" : "Publish Product"}</span>
+                        <span>
+                            {isSaving
+                                ? "Saving..."
+                                : isEditMode
+                                ? "Save Changes"
+                                : "Publish Product"}
+                        </span>
                     </Button>
                 </div>
             </div>
@@ -371,7 +469,7 @@ const EditProduct = () => {
                             Select Available Colors
                         </label>
                         <div className="flex flex-wrap gap-3">
-                            {AVAILABLE_COLORS.map((col) => {
+                            {displayedColors.map((col) => {
                                 const selected = formData.colors.includes(col.name);
                                 return (
                                     <button
@@ -386,7 +484,7 @@ const EditProduct = () => {
                                     >
                                         <span
                                             className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0"
-                                            style={{ backgroundColor: col.hex }}
+                                            style={getColorStyle(col.name || col.hex)}
                                         />
                                         <span>{col.name}</span>
                                         {selected && <Check className="w-3.5 h-3.5 text-black" />}
@@ -474,10 +572,17 @@ const EditProduct = () => {
 
                     <Button
                         type="submit"
-                        className="btn-black px-8 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm"
+                        disabled={isSaving}
+                        className="btn-black px-8 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         <Save className="w-4 h-4" />
-                        <span>{isEditMode ? "Save Changes" : "Create Product"}</span>
+                        <span>
+                            {isSaving
+                                ? "Saving..."
+                                : isEditMode
+                                ? "Save Changes"
+                                : "Create Product"}
+                        </span>
                     </Button>
                 </div>
             </form>

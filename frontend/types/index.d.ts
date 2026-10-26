@@ -1,12 +1,36 @@
+type ProductImage = {
+    url: string;
+    altText?: string;
+    _id?: string;
+};
+
 type Product = {
-    productId: number;
+    _id?: string;
+    productId?: number | string;
     name: string;
-    size: string;
-    color: string;
-    quantity: number;
+    description?: string;
     price: number;
-    image: string;
-}
+    discountPrice?: number;
+    countInStock?: number;
+    sku?: string;
+    category?: string;
+    brand?: string;
+    sizes?: string[];
+    colors?: string[];
+    collections?: string;
+    material?: string;
+    gender?: string;
+    images?: ProductImage[];
+    isFeatured?: boolean;
+    isPublished?: boolean;
+    rating?: number;
+    numReviews?: number;
+    tags?: string[];
+    size?: string;
+    color?: string;
+    quantity?: number;
+    image?: string;
+};
 
 type OrderItem = {
     productId: string;
@@ -42,11 +66,11 @@ type Order = {
     orderItems: { name: string; image: string }[];
     totalPrice: number;
     isPaid: boolean;
-}
+};
 
 interface CartDrawerProps {
-    drawerOpen: boolean,
-    toggleCartDrawer: () => void,
+    drawerOpen: boolean;
+    toggleCartDrawer: () => void;
 }
 
 interface ProductGridProps {

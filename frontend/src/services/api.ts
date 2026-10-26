@@ -37,6 +37,7 @@ api.interceptors.response.use(
     if (
       (error.response?.status === 401 || error.response?.status === 403) &&
       !originalRequest?._retry &&
+      inMemoryToken &&
       !originalRequest?.url?.includes("/auth/login") &&
       !originalRequest?.url?.includes("/auth/register") &&
       !originalRequest?.url?.includes("/auth/refresh")
@@ -55,6 +56,7 @@ api.interceptors.response.use(
         }
       } catch {
         setAccessToken(null);
+        localStorage.removeItem("classyshop_has_session");
       }
     }
     return Promise.reject(error);

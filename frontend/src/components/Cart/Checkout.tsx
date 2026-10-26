@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     ChevronLeft,
@@ -10,9 +10,11 @@ import {
     Tag,
     ShoppingBag
 } from "lucide-react";
-import { sampleCartProducts } from "../../constants";
+import { useCart } from "../../hooks/useCart.ts";
+import { useAuth } from "../../hooks/useAuth.ts";
 import Button from "../Common/Button.tsx";
 import { toast } from "sonner";
+import { getColorStyle } from "../../utils/colors.ts";
 
 interface ShippingFormData {
     email: string;
@@ -30,16 +32,15 @@ interface ShippingFormData {
 
 const Checkout = () => {
     const navigate = useNavigate();
-
-    // Mock cart items based on provided sample data
-    const [cartItems] = useState(sampleCartProducts);
+    const { items: cartItems, totalPrice: subtotal } = useCart();
+    const { isAuthenticated, isLoading, user } = useAuth();
 
     // Form inputs state
-    const [formData, setFormData] = useState<ShippingFormData>({
-        email: "customer@example.com",
+    const [formData, setFormData] = useState<ShippingFormData>(() => ({
+        email: user?.email || "customer@example.com",
         newsletter: true,
-        firstName: "John",
-        lastName: "Doe",
+        firstName: user?.name ? user.name.split(" ")[0] || "John" : "John",
+        lastName: user?.name ? user.name.split(" ").slice(1).join(" ") || "Doe" : "Doe",
         address: "123 Broadway Avenue",
         apartment: "Apt 4B",
         city: "New York",
@@ -47,7 +48,31 @@ const Checkout = () => {
         country: "United States",
         phone: "+1 (555) 234-5678",
         saveInfo: true,
-    });
+    }));
+
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            toast.info("Please log in to proceed to checkout", { duration: 2500 });
+            navigate("/login?redirect=checkout", {
+                replace: true,
+                state: { from: { pathname: "/checkout" } },
+            });
+        }
+    }, [isAuthenticated, isLoading, navigate]);
+
+    useEffect(() => {
+        if (user) {
+            const names = (user.name || "").trim().split(" ");
+            const firstName = names[0];
+            const lastName = names.slice(1).join(" ");
+            setFormData((prev) => ({
+                ...prev,
+                email: user.email || prev.email,
+                ...(firstName ? { firstName } : {}),
+                ...(lastName ? { lastName } : {}),
+            }));
+        }
+    }, [user]);
 
     // Shipping & payment methods
     const [shippingMethod, setShippingMethod] = useState<"standard" | "express">("standard");
@@ -67,7 +92,6 @@ const Checkout = () => {
     const [appliedCode, setAppliedCode] = useState<string | null>(null);
 
     // Calculations
-    const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const shippingCost = shippingMethod === "express" ? 15 : 0;
     const tax = Math.round(subtotal * 0.08 * 100) / 100;
     const total = Math.max(0, subtotal + shippingCost + tax - discount);
@@ -137,6 +161,18 @@ const Checkout = () => {
         navigate(`/order/${mockOrderId}`);
     };
 
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-black" />
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return null;
+    }
+
     return (
         <div className="bg-gray-50/50 min-h-screen py-8 sm:py-12">
             <div className="container mx-auto px-4 max-w-6xl">
@@ -161,12 +197,18 @@ const Checkout = () => {
                                     <h2 className="card-title">
                                         Contact Information
                                     </h2>
-                                    <span className="text-xs text-gray-500">
-                                        Already have an account?{" "}
-                                        <Link to="/login" className="text-black font-semibold underline">
-                                            Log in
-                                        </Link>
-                                    </span>
+                                    {user ? (
+                                        <span className="text-xs text-gray-500">
+                                            Logged in as <span className="font-semibold text-gray-900">{user.email}</span>
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-gray-500">
+                                            Already have an account?{" "}
+                                            <Link to="/login?redirect=checkout" className="text-black font-semibold underline">
+                                                Log in
+                                            </Link>
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">
@@ -690,8 +732,15 @@ const Checkout = () => {
                                                 <h4 className="font-semibold text-sm text-gray-900 truncate">
                                                     {item.name}
                                                 </h4>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    Size: {item.size} &middot; Color: {item.color}
+                                                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                                                    <span>Size: {item.size} &middot; Color:</span>
+                                                    <span className="font-medium text-gray-700 inline-flex items-center gap-1">
+                                                        <span
+                                                            className="w-2.5 h-2.5 rounded-full border border-gray-300 inline-block shrink-0"
+                                                            style={getColorStyle(item.color)}
+                                                        />
+                                                        {item.color}
+                                                    </span>
                                                 </p>
                                                 <p className="text-xs text-gray-400 mt-0.5">
                                                     ${item.price.toFixed(2)} each

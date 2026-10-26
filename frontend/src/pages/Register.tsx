@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -15,8 +15,20 @@ import { getApiErrorMessage } from "../services/authService.ts";
 
 const Register = () => {
     const navigate = useNavigate();
-    const { register: registerAuth } = useAuth();
+    const location = useLocation();
+    const { register: registerAuth, isAuthenticated } = useAuth();
     const [serverError, setServerError] = useState<string | null>(null);
+
+    const searchParams = new URLSearchParams(location.search);
+    const redirectParam = searchParams.get("redirect");
+    const redirectPath = redirectParam ? (redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`) : null;
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || redirectPath || "/";
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate(from, { replace: true });
+        }
+    }, [isAuthenticated, from, navigate]);
 
     const {
         register,
@@ -36,7 +48,7 @@ const Register = () => {
             setServerError(null);
             const res = await registerAuth(data);
             toast.success(res.message || "Registration successful!");
-            navigate("/", { replace: true });
+            navigate(from, { replace: true });
         } catch (error) {
             const message = getApiErrorMessage(error, "Failed to register account. Please try again.");
             setServerError(message);
@@ -138,7 +150,11 @@ const Register = () => {
 
                     <p className="mt-6 text-center text-sm">
                         Already have an account?{" "}
-                        <Link to="/login" className="text-blue-500 hover:underline">
+                        <Link
+                            to={location.search ? `/login${location.search}` : "/login"}
+                            state={location.state}
+                            className="text-blue-500 hover:underline"
+                        >
                             Login
                         </Link>
                     </p>

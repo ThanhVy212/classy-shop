@@ -8,9 +8,11 @@ import { createPortal } from "react-dom";
 import Button from "./Button.tsx";
 import logo from "../../assets/logo.svg";
 import { useAuth } from "../../hooks/useAuth.ts";
+import { useCart } from "../../hooks/useCart.ts";
 
 const Navbar = () => {
     const { user, isAuthenticated } = useAuth();
+    const { totalItems } = useCart();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [navDrawerOpen, setNavDrawerOpen] = useState(false);
 
@@ -67,9 +69,11 @@ const Navbar = () => {
 
                     <Button onClick={toggleDrawer} className="relative cursor-pointer" aria-label="Cart">
                         <ShoppingCart className="h-5 w-5 text-gray-600 hover:text-black transition-colors" />
-                        <span className="badge-red absolute -top-1 -right-2">
-                            4
-                        </span>
+                        {totalItems > 0 && (
+                            <span className="badge-red absolute -top-1 -right-2">
+                                {totalItems > 99 ? "99+" : totalItems}
+                            </span>
+                        )}
                     </Button>
 
                     <SearchBar />

@@ -6,6 +6,8 @@ const SortOptions = () => {
     const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const sortBy = e.target.value;
         const newParams = new URLSearchParams(searchParams);
+        // Reset page to 1 when sort changes
+        newParams.delete("page");
 
         if (sortBy) {
             newParams.set("sortBy", sortBy);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,10 +16,19 @@ import { getApiErrorMessage } from "../services/authService.ts";
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
     const [serverError, setServerError] = useState<string | null>(null);
 
-    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
+    const searchParams = new URLSearchParams(location.search);
+    const redirectParam = searchParams.get("redirect");
+    const redirectPath = redirectParam ? (redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`) : null;
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || redirectPath || "/";
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate(from, { replace: true });
+        }
+    }, [isAuthenticated, from, navigate]);
 
     const {
         register,
@@ -124,7 +133,11 @@ const Login = () => {
 
                     <p className="mt-6 text-center text-sm">
                         Don't have an account?{" "}
-                        <Link to="/register" className="text-blue-500 hover:underline">
+                        <Link
+                            to={location.search ? `/register${location.search}` : "/register"}
+                            state={location.state}
+                            className="text-blue-500 hover:underline"
+                        >
                             Register
                         </Link>
                     </p>

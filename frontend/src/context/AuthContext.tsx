@@ -5,6 +5,8 @@ import { authService } from "../services/authService";
 import { setAccessToken } from "../services/api";
 import { AuthContext } from "./auth-context";
 
+const HAS_SESSION_KEY = "classyshop_has_session";
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -14,6 +16,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let isMounted = true;
     const initAuth = async () => {
+      const hasSession = localStorage.getItem(HAS_SESSION_KEY) === "true";
+      if (!hasSession) {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
         const refreshRes = await authService.refreshToken();
         if (refreshRes?.accessToken) {
@@ -28,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch {
         // Not authenticated or refresh session expired
+        localStorage.removeItem(HAS_SESSION_KEY);
         if (isMounted) {
           setAccessToken(null);
           setUser(null);
@@ -49,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = useCallback(async (data: LoginFormData): Promise<AuthResponse> => {
     const response = await authService.login(data);
     if (response.token) {
+      localStorage.setItem(HAS_SESSION_KEY, "true");
       setAccessToken(response.token);
       setToken(response.token);
     }
@@ -61,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = useCallback(async (data: RegisterFormData): Promise<AuthResponse> => {
     const response = await authService.register(data);
     if (response.token) {
+      localStorage.setItem(HAS_SESSION_KEY, "true");
       setAccessToken(response.token);
       setToken(response.token);
     }
@@ -76,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.warn("Logout error:", err);
     } finally {
+      localStorage.removeItem(HAS_SESSION_KEY);
       setAccessToken(null);
       setUser(null);
       setToken(null);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { getColorStyle } from "../../utils/colors.ts";
 
 const FilterSidebar = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -31,6 +32,8 @@ const FilterSidebar = () => {
         "Pink",
         "Beige",
         "Navy",
+        "Navy Blue",
+        "Burgundy",
     ];
     const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
     const materials = [
@@ -85,6 +88,8 @@ const FilterSidebar = () => {
     const updateURLParams = (newFilters: typeof filters) => {
         // Preserve other existing params like 'search', 'sortBy', etc.
         const params = new URLSearchParams(searchParams);
+        // Reset page to 1 when filters change
+        params.delete("page");
 
         Object.keys(newFilters).forEach((key) => {
             const val = newFilters[key as keyof typeof newFilters];
@@ -299,7 +304,7 @@ const FilterSidebar = () => {
                                 className={`w-7 h-7 rounded-full border border-gray-300 cursor-pointer transition-transform duration-200 hover:scale-110 ${
                                     isSelected ? "ring-2 ring-black ring-offset-2 scale-110 shadow-sm" : ""
                                 }`}
-                                style={{ backgroundColor: color.toLowerCase() }}
+                                style={getColorStyle(color)}
                             />
                         );
                     })}
