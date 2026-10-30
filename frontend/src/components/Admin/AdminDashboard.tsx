@@ -119,7 +119,7 @@ const AdminDashboard = () => {
         {
             id: "2",
             name: "Classic White T-Shirt",
-            category: "Men",
+            category: "Top Wear",
             price: 25,
             sales: 210,
             revenue: "$5,250",
@@ -137,7 +137,7 @@ const AdminDashboard = () => {
         {
             id: "4",
             name: "Casual Street Hoodie",
-            category: "Women",
+            category: "Outerwear",
             price: 55,
             sales: 84,
             revenue: "$4,620",

@@ -17,6 +17,7 @@ interface AdminProductItem {
   id: string;
   name: string;
   category: string;
+  gender?: string;
   price: number;
   stock: number;
   image: string;
@@ -28,6 +29,7 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedGender, setSelectedGender] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
 
   const loadProducts = async () => {
@@ -39,6 +41,7 @@ const ProductManagement = () => {
           id: p._id,
           name: p.name,
           category: p.category,
+          gender: p.gender || "Unisex",
           price: p.price,
           stock: p.countInStock ?? 0,
           sku: p.sku,
@@ -67,13 +70,16 @@ const ProductManagement = () => {
     const matchesCategory =
       selectedCategory === "all" ||
       prod.category.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesGender =
+      selectedGender === "all" ||
+      (prod.gender && prod.gender.toLowerCase() === selectedGender.toLowerCase());
     const matchesStock =
       stockFilter === "all" ||
       (stockFilter === "in_stock" && prod.stock > 10) ||
       (stockFilter === "low_stock" && prod.stock > 0 && prod.stock <= 10) ||
       (stockFilter === "out_of_stock" && prod.stock === 0);
 
-    return matchesSearch && matchesCategory && matchesStock;
+    return matchesSearch && matchesCategory && matchesGender && matchesStock;
   });
 
   const handleDeleteProduct = async (id: string, name: string) => {
@@ -133,12 +139,23 @@ const ProductManagement = () => {
               className="admin-filter-select"
             >
               <option value="all">All Categories</option>
-              <option value="Men">Men</option>
-              <option value="Women">Women</option>
               <option value="Top Wear">Top Wear</option>
               <option value="Bottom Wear">Bottom Wear</option>
+              <option value="Outerwear">Outerwear</option>
+              <option value="Dresses">Dresses</option>
             </select>
           </div>
+
+          <select
+            value={selectedGender}
+            onChange={(e) => setSelectedGender(e.target.value)}
+            className="admin-filter-select"
+          >
+            <option value="all">All Genders</option>
+            <option value="Men">Men</option>
+            <option value="Women">Women</option>
+            <option value="Unisex">Unisex</option>
+          </select>
 
           <select
             value={stockFilter}
@@ -166,7 +183,7 @@ const ProductManagement = () => {
                 <tr>
                   <th className="py-3.5 px-5">Product</th>
                   <th className="py-3.5 px-5">SKU</th>
-                  <th className="py-3.5 px-5">Category</th>
+                  <th className="py-3.5 px-5">Category &amp; Gender</th>
                   <th className="py-3.5 px-5">Price</th>
                   <th className="py-3.5 px-5">Inventory</th>
                   <th className="py-3.5 px-5 text-right">Actions</th>
@@ -197,9 +214,16 @@ const ProductManagement = () => {
                         {prod.sku}
                       </td>
                       <td className="py-4 px-5">
-                        <span className="text-xs px-2.5 py-1 bg-gray-100 rounded-lg text-gray-700 font-medium">
-                          {prod.category}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs px-2.5 py-1 bg-gray-100 rounded-lg text-gray-700 font-medium">
+                            {prod.category}
+                          </span>
+                          {prod.gender && (
+                            <span className="text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-semibold border border-blue-100">
+                              {prod.gender}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-5 font-bold text-gray-900">
                         ${prod.price.toFixed(2)}

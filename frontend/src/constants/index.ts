@@ -233,15 +233,15 @@ export const sampleSelectedProduct = {
     colors: ["Red", "Black"],
     images: [
         {
-            url: "https://picsum.photos/500/500?random=1",
+            url: "https://picsum.photos/1000/1000?random=1",
             altText: "Casual Shirt 1",
         },
         {
-            url: "https://picsum.photos/500/500?random=2",
+            url: "https://picsum.photos/1000/1000?random=2",
             altText: "Casual Shirt 2",
         },
         {
-            url: "https://picsum.photos/500/500?random=3",
+            url: "https://picsum.photos/1000/1000?random=3",
             altText: "Casual Shirt 3",
         }
     ]

@@ -19,7 +19,7 @@ export const createProduct = async (req, res) => {
       gender,
       images,
       isFeatured,
-      isPublished,
+      isPublished = true,
       tags,
       dimensions,
       weight,
@@ -257,9 +257,27 @@ export const getProducts = async (req, res) => {
         break;
 
       case "popularity":
-        sort = { rating: -1 };
+      case "bestSelling":
+        sort = { rating: -1, createdAt: -1 };
         break;
 
+      case "featured":
+        sort = { isFeatured: -1, createdAt: -1 };
+        break;
+
+      case "titleAsc":
+        sort = { name: 1 };
+        break;
+
+      case "titleDesc":
+        sort = { name: -1 };
+        break;
+
+      case "dateAsc":
+        sort = { createdAt: 1 };
+        break;
+
+      case "dateDesc":
       default:
         sort = { createdAt: -1 };
         break;
@@ -338,23 +356,86 @@ export const getSimilarProductById = async (req, res) => {
       });
     }
 
+    // Find current product
     const product = await Product.findById(id);
 
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({
+        message: "Product not found",
+      });
     }
 
-    const similarProducts = await Product.find({
-      _id: { $ne: id }, // Exclude the current product
-      $or: [
-        { gender: product.gender },
-        { category: product.category },
-        { collections: { $in: product.collections } },
-        { brand: product.brand },
-      ],
-    }).limit(4);
+    const LIMIT = 4;
+    const existingIds = [product._id];
+    let similarProducts = [];
 
-    return res.status(200).json({ similarProducts });
+    // Case-insensitive regex for category matching
+    const categoryRegex = product.category
+      ? new RegExp(`^${product.category.trim()}$`, "i")
+      : null;
+
+    // Step 1: Find products with BOTH the same category and same gender (highest relevance)
+    if (categoryRegex && product.gender) {
+      const sameCategoryAndGender = await Product.find({
+        _id: { $nin: existingIds },
+        category: { $regex: categoryRegex },
+        gender: product.gender,
+      })
+        .limit(LIMIT)
+        .lean();
+
+      similarProducts = [...sameCategoryAndGender];
+      similarProducts.forEach((p) => existingIds.push(p._id));
+    }
+
+    // Step 2: If not enough, find more products in the same category (any gender)
+    if (similarProducts.length < LIMIT && categoryRegex) {
+      const remaining = LIMIT - similarProducts.length;
+
+      const sameCategory = await Product.find({
+        _id: { $nin: existingIds },
+        category: { $regex: categoryRegex },
+      })
+        .limit(remaining)
+        .lean();
+
+      similarProducts = [...similarProducts, ...sameCategory];
+      sameCategory.forEach((p) => existingIds.push(p._id));
+    }
+
+    // Step 3: If still not enough, find more products with the same gender
+    if (similarProducts.length < LIMIT && product.gender) {
+      const remaining = LIMIT - similarProducts.length;
+
+      const sameGender = await Product.find({
+        _id: { $nin: existingIds },
+        gender: product.gender,
+      })
+        .limit(remaining)
+        .lean();
+
+      similarProducts = [...similarProducts, ...sameGender];
+      sameGender.forEach((p) => existingIds.push(p._id));
+    }
+
+    // Step 4: Fallback to other products to ensure LIMIT is filled
+    if (similarProducts.length < LIMIT) {
+      const remaining = LIMIT - similarProducts.length;
+
+      const fallback = await Product.find({
+        _id: { $nin: existingIds },
+      })
+        .limit(remaining)
+        .lean();
+
+      similarProducts = [...similarProducts, ...fallback];
+    }
+
+    return res.status(200).json({
+      message: "Similar products retrieved successfully",
+      total: similarProducts.length,
+      similarProducts,
+    });
   } catch (error) {
     console.error("Get similar product by ID error:", error);
 

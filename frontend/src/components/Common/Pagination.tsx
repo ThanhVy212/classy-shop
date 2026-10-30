@@ -107,22 +107,22 @@ export const Pagination: React.FC<PaginationProps> = ({
         const isActive = page === currentPage;
 
         return (
-          <button
-            key={page}
-            type="button"
-            onClick={() => onPageChange(page)}
-            aria-current={isActive ? "page" : undefined}
-            aria-label={`Go to page ${page}`}
-            className={`w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg flex items-center justify-center text-sm sm:text-base font-semibold transition-all ${
-              variant === "fill"
-                ? isActive
-                  ? "bg-[#e9e1ff] border border-[#ad6dff] text-[#9849ff] font-bold shadow-xs cursor-default"
-                  : "bg-white border border-[#dadada] text-[#1e1e1e] hover:border-gray-400 hover:bg-gray-50 cursor-pointer"
-                : isActive
-                ? "text-[#9849ff] font-bold cursor-default"
-                : "text-[#1e1e1e] hover:bg-gray-100 cursor-pointer"
-            }`}
-          >
+            <button
+                key={page}
+                type="button"
+                onClick={() => onPageChange(page)}
+                aria-current={isActive ? "page" : undefined}
+                aria-label={`Go to page ${page}`}
+                className={`w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg flex items-center justify-center text-sm sm:text-base font-semibold transition-all ${
+                    variant === "fill"
+                        ? isActive
+                            ? "bg-gray-200 border border-gray-400 text-gray-700 font-bold shadow-xs cursor-default"
+                            : "bg-white border border-gray-300 text-gray-800 hover:border-gray-400 hover:bg-gray-50 cursor-pointer"
+                        : isActive
+                            ? "text-gray-600 font-bold cursor-default"
+                            : "text-gray-800 hover:bg-gray-100 cursor-pointer"
+                }`}
+            >
             {page}
           </button>
         );

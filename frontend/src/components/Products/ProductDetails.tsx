@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import Button from "../Common/Button.tsx";
 import ProductGrid from "./ProductGrid.tsx";
+import ProductImageZoom from "./ProductImageZoom.tsx";
 import { productService } from "../../services/productService.ts";
 import { useCart } from "../../hooks/useCart.ts";
 import type { Product } from "../../types/product.ts";
@@ -61,10 +62,10 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
               loadedProduct._id,
             );
             if (isMounted) {
-              setSimilarProducts(similar);
+              setSimilarProducts(similar || []);
             }
-          } catch {
-            // Fail silently on similar products
+          } catch (err) {
+            console.error("Failed to fetch similar products:", err);
           }
         }
       } catch (err) {
@@ -185,15 +186,22 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
             ))}
           </div>
 
-          {/* Main Image */}
+          {/* Main Image with Zoom */}
           <div className="md:w-1/2">
-            <div className="mb-4 overflow-hidden rounded-lg bg-gray-50">
-              <img
-                src={mainImage || images[0].url}
-                alt={product.name}
-                className="w-full h-auto max-h-[550px] object-cover rounded-lg"
-              />
-            </div>
+            <ProductImageZoom
+              src={mainImage || images[0].url}
+              alt={product.name}
+              images={images}
+              currentIndex={Math.max(
+                0,
+                images.findIndex((img) => img.url === (mainImage || images[0].url))
+              )}
+              onSelectImage={(idx) => {
+                if (images[idx]) {
+                  setMainImage(images[idx].url);
+                }
+              }}
+            />
           </div>
 
           {/* Mobile Thumb */}
@@ -321,7 +329,7 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
             </Button>
 
             {/* Characteristics */}
-            {(product.brand || product.material || product.sku) && (
+            {(product.brand || product.material) && (
               <div className="mt-8 pt-6 border-t border-gray-200 text-gray-700">
                 <h3 className="text-lg font-bold mb-3">Characteristics:</h3>
                 <table className="w-full text-left text-sm text-gray-600">
@@ -339,14 +347,6 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                         <td className="py-1.5 text-gray-500 w-32">Material:</td>
                         <td className="py-1.5 font-semibold text-gray-800">
                           {product.material}
-                        </td>
-                      </tr>
-                    )}
-                    {product.sku && (
-                      <tr>
-                        <td className="py-1.5 text-gray-500 w-32">SKU:</td>
-                        <td className="py-1.5 font-semibold text-gray-800">
-                          {product.sku}
                         </td>
                       </tr>
                     )}

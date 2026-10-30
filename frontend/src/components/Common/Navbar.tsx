@@ -26,12 +26,12 @@ const Navbar = () => {
 
     return (
         <>
-            <nav className="container mx-auto flex items-center justify-between px-4 py-2 sm:py-2.5">
+            <nav className="container mx-auto flex items-center justify-between px-4 h-14">
                 {/* Left - Logo */}
                 <div>
                     <Link to="/">
                         <div className="flex items-center">
-                            <img src={logo} alt="logo" className="w-12 h-12 sm:w-10 sm:h-10 object-contain mr-2" />
+                            <img src={logo} alt="logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain mr-2" />
                             <div className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 hidden sm:block">
                                 ClassyShop
                             </div>

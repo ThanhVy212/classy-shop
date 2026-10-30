@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
     ArrowLeft,
@@ -6,13 +6,23 @@ import {
     X,
     Check,
     Save,
+    Loader2,
 } from "lucide-react";
 import Button from "../Common/Button.tsx";
 import { toast } from "sonner";
 import { productService } from "../../services/productService.ts";
+import { uploadService } from "../../services/uploadService.ts";
 import { getColorStyle, getColorHex } from "../../utils/colors.ts";
 
 const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "30", "32", "34"];
+const AVAILABLE_CATEGORIES = [
+    "Top Wear",
+    "Bottom Wear",
+    "Outerwear",
+    "Dresses",
+];
+const AVAILABLE_GENDERS = ["Men", "Women", "Unisex"] as const;
+
 const AVAILABLE_COLORS = [
     { name: "Black", hex: "#000000" },
     { name: "White", hex: "#ffffff" },
@@ -43,13 +53,17 @@ const EditProduct = () => {
     const navigate = useNavigate();
     const isEditMode = Boolean(id);
 
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+
     const [formData, setFormData] = useState(() => ({
         name: isEditMode ? "Premium Classy Jacket" : "",
         sku: isEditMode ? `PRD-00${id}` : `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
         description: isEditMode
             ? "Crafted from high-performance breathable fabric with clean tailoring for urban comfort and everyday style."
             : "",
-        category: isEditMode ? "Top Wear" : "Men",
+        category: "Top Wear",
+        gender: "Men",
         brand: "ClassyShop",
         material: "100% Organic Cotton",
         price: isEditMode ? "120" : "",
@@ -79,6 +93,7 @@ const EditProduct = () => {
                             sku: prod.sku || "",
                             description: prod.description || "",
                             category: prod.category || "Top Wear",
+                            gender: prod.gender || "Men",
                             brand: prod.brand || "ClassyShop",
                             material: prod.material || "100% Organic Cotton",
                             price: prod.price !== undefined ? String(prod.price) : "",
@@ -160,18 +175,45 @@ const EditProduct = () => {
         }));
     };
 
-    const handleGenerateMockImages = () => {
-        const randomId1 = Math.floor(Math.random() * 80) + 1;
-        const randomId2 = Math.floor(Math.random() * 80) + 1;
-        setFormData((prev) => ({
-            ...prev,
-            images: [
-                ...prev.images,
-                `https://picsum.photos/500/500?random=${randomId1}`,
-                `https://picsum.photos/500/500?random=${randomId2}`,
-            ],
-        }));
-        toast.info("Added 2 sample high-res product photos");
+    const handleTriggerFileInput = () => {
+        if (isUploadingImage) return;
+        fileInputRef.current?.click();
+    };
+
+    const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const fileArray = Array.from(files);
+        setIsUploadingImage(true);
+        const toastId = toast.loading(`Uploading ${fileArray.length} image(s)...`);
+
+        try {
+            const uploaded = await uploadService.uploadMultipleImages(fileArray);
+            const newUrls = uploaded.map((img) => img.url).filter(Boolean);
+
+            if (newUrls.length > 0) {
+                setFormData((prev) => ({
+                    ...prev,
+                    images: [...prev.images, ...newUrls],
+                }));
+                toast.success(`Uploaded ${newUrls.length} image(s) successfully!`, {
+                    id: toastId,
+                });
+            } else {
+                toast.error("Failed to upload images.", { id: toastId });
+            }
+        } catch (error: unknown) {
+            console.error("Upload images error:", error);
+            const errResponse = (error as { response?: { data?: { message?: string } } })?.response;
+            const message = errResponse?.data?.message || "Failed to upload image from machine. Please try again.";
+            toast.error(message, { id: toastId });
+        } finally {
+            setIsUploadingImage(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -189,6 +231,7 @@ const EditProduct = () => {
                 sku: formData.sku.trim() || `SKU-${Date.now()}`,
                 description: formData.description.trim() || formData.name.trim(),
                 category: formData.category,
+                gender: formData.gender,
                 brand: formData.brand.trim() || "ClassyShop",
                 material: formData.material.trim() || "Cotton",
                 price: Number(formData.price) || 0,
@@ -198,6 +241,7 @@ const EditProduct = () => {
                 colors: formData.colors.length > 0 ? formData.colors : ["Black"],
                 collections: "Business Casual",
                 images: formData.images.map((url) => ({ url, altText: formData.name })),
+                isPublished: true,
             };
 
             if (isEditMode && id) {
@@ -247,7 +291,7 @@ const EditProduct = () => {
                     <Button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={isSaving}
+                        disabled={isSaving || isUploadingImage}
                         className="btn-primary-action px-5 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         <Save className="w-4 h-4" />
@@ -333,7 +377,7 @@ const EditProduct = () => {
                 {/* 2. Pricing & Category & Inventory */}
                 <div className="card-padded space-y-5">
                     <h2 className="card-title border-b border-gray-100 pb-3">
-                        Pricing, Category &amp; Stock
+                        Pricing, Category, Gender &amp; Stock
                     </h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -397,10 +441,11 @@ const EditProduct = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-2">
+                        {/* Category Selection */}
                         <div>
                             <label className="form-label">
-                                Collection / Category *
+                                Category *
                             </label>
                             <select
                                 name="category"
@@ -408,13 +453,34 @@ const EditProduct = () => {
                                 onChange={handleInputChange}
                                 className="form-select"
                             >
-                                <option value="Men">Men</option>
-                                <option value="Women">Women</option>
-                                <option value="Top Wear">Top Wear</option>
-                                <option value="Bottom Wear">Bottom Wear</option>
+                                {AVAILABLE_CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                        {cat}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
+                        {/* Gender Target Selection */}
+                        <div>
+                            <label className="form-label">
+                                Gender Target *
+                            </label>
+                            <select
+                                name="gender"
+                                value={formData.gender}
+                                onChange={handleInputChange}
+                                className="form-select font-medium"
+                            >
+                                {AVAILABLE_GENDERS.map((g) => (
+                                    <option key={g} value={g}>
+                                        {g}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Material */}
                         <div>
                             <label className="form-label">
                                 Fabric &amp; Material
@@ -498,8 +564,23 @@ const EditProduct = () => {
                 {/* 4. Product Gallery */}
                 <div className="card-padded space-y-6">
                     <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                        <h2 className="card-title">Product Images Gallery</h2>
+                        <div>
+                            <h2 className="card-title">Product Images Gallery</h2>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Click &quot;Add More&quot; to upload images directly from your computer or paste image URLs.
+                            </p>
+                        </div>
                     </div>
+
+                    {/* Hidden Native File Input for Upload */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleFileInputChange}
+                        className="hidden"
+                    />
 
                     {/* Image URL input */}
                     <div className="flex gap-2">
@@ -507,7 +588,7 @@ const EditProduct = () => {
                             type="url"
                             value={imageUrlInput}
                             onChange={(e) => setImageUrlInput(e.target.value)}
-                            placeholder="Paste high-res image URL (e.g. https://...)"
+                            placeholder="Paste image URL (optional, e.g. https://...)"
                             className="form-input flex-1"
                         />
                         <button
@@ -515,7 +596,7 @@ const EditProduct = () => {
                             onClick={handleAddImage}
                             className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold rounded-xl transition cursor-pointer"
                         >
-                            Add Image
+                            Add URL
                         </button>
                     </div>
 
@@ -547,14 +628,27 @@ const EditProduct = () => {
                             </div>
                         ))}
 
-                        {/* Drop / Add Placeholder */}
+                        {/* Add More from Device Box */}
                         <div
-                            onClick={handleGenerateMockImages}
-                            className="aspect-square rounded-2xl border-2 border-dashed border-gray-300 hover:border-black flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-colors bg-gray-50/50 hover:bg-gray-50"
+                            onClick={handleTriggerFileInput}
+                            className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-colors ${
+                                isUploadingImage
+                                    ? "border-black bg-gray-100 cursor-not-allowed opacity-75"
+                                    : "border-gray-300 hover:border-black bg-gray-50/50 hover:bg-gray-50"
+                            }`}
+                            title="Click to upload images from your computer"
                         >
-                            <UploadCloud className="w-6 h-6 text-gray-400 mb-1" />
-                            <span className="text-xs font-semibold text-gray-700">Add More</span>
-                            <span className="text-[10px] text-gray-400">or click to sample</span>
+                            {isUploadingImage ? (
+                                <>
+                                    <Loader2 className="w-6 h-6 text-black animate-spin mb-1.5" />
+                                    <span className="text-xs font-semibold text-gray-700">Uploading...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <UploadCloud className="w-6 h-6 text-gray-500 mb-1.5" />
+                                    <span className="text-xs font-semibold text-gray-700">Add More</span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -572,7 +666,7 @@ const EditProduct = () => {
 
                     <Button
                         type="submit"
-                        disabled={isSaving}
+                        disabled={isSaving || isUploadingImage}
                         className="btn-black px-8 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         <Save className="w-4 h-4" />

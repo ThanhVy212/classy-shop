@@ -34,17 +34,17 @@ router.delete("/:id", protectedRoute, isAdmin, deleteProduct);
 router.get("/", getProducts);
 
 // @route GET /api/products/similar/:id
-// @desc Retrevieve similar products based on the current product's gender and categoory
+// @desc Retrieve similar products based on the current product's gender and category
 // @access Public
 router.get("/similar/:id", getSimilarProductById);
 
 // @route GET /api/products/best-seller
-// @desc Retrevieve the product with highest rating
+// @desc Retrieve the product with highest rating
 // @access Public
 router.get("/best-seller", getBestsellerProduct);
 
 // @route GET /api/products/new-arrivals
-// @desc Retrevieve lastet 8 products - Create date
+// @desc Retrieve lasted 8 products - Create date
 // @access Public
 router.get("/new-arrivals", getNewarrivalsProduct);
 

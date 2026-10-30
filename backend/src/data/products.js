@@ -18,11 +18,15 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=39",
+        url: "https://adkn.co.uk/cdn/shop/files/assets_task_01jsm57ys1ex08g62etpxxwgqj_img_2.png?v=1745507966",
         altText: "Classic Oxford Button-Down Shirt Front View",
       },
       {
-        url: "https://picsum.photos/500/500?random=40",
+        url: "https://adkn.co.uk/cdn/shop/files/assets_task_01jsm5kbstfcdrh4q3fv17h6rn_img_1.png?v=1745507647&width=900",
+        altText: "Classic Oxford Button-Down Shirt Close-up View",
+      },
+      {
+        url: "https://adkn.co.uk/cdn/shop/files/assets_task_01jsm5gtxwe2gaesq3x0zbqgtb_img_0.png?v=1745507966&width=900",
         altText: "Classic Oxford Button-Down Shirt Back View",
       },
     ],
@@ -46,11 +50,15 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=41",
+        url: "https://image.hm.com/assets/hm/34/d5/34d5756b3513f70cdb64bebb70fca4c00e7f9bf2.jpg?imwidth=2160",
         altText: "Slim-Fit Stretch Shirt Front View",
       },
       {
-        url: "https://picsum.photos/500/500?random=42",
+        url: "https://image.hm.com/assets/hm/34/d5/34d5756b3513f70cdb64bebb70fca4c00e7f9bf2.jpg?imwidth=2160",
+        altText: "Slim-Fit Stretch Shirt Close-up View",
+      },
+      {
+        url: "https://image.hm.com/assets/hm/dd/68/dd683d4d554b8c493985f717eee6452de51a54aa.jpg?imwidth=2160",
         altText: "Slim-Fit Stretch Shirt Back View",
       },
     ],
@@ -74,11 +82,11 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=43",
+        url: "https://m.media-amazon.com/images/I/61nR9btizRL._SY741_.jpg",
         altText: "Casual Denim Shirt Front View",
       },
       {
-        url: "https://picsum.photos/500/500?random=44",
+        url: "https://m.media-amazon.com/images/I/611lMiazKAL._SY741_.jpg",
         altText: "Casual Denim Shirt Back View",
       },
     ],
@@ -102,44 +110,16 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=45",
+        url: "https://image.hm.com/assets/hm/d6/a6/d6a6743e009d4e065bfcdd93003399a5347f13b6.jpg?imwidth=2160",
         altText: "Printed Resort Shirt Front View",
       },
       {
-        url: "https://picsum.photos/500/500?random=1",
+        url: "https://image.hm.com/assets/hm/32/cd/32cd83d577eed9a654b35e5c7f690628b56ed574.jpg?imwidth=2160",
         altText: "Printed Resort Shirt Back View",
       },
     ],
     rating: 4.4,
     numReviews: 10,
-  },
-  {
-    name: "Slim-Fit Easy-Iron Shirt",
-    description:
-      "A slim-fit, easy-iron shirt in woven cotton fabric with a fitted silhouette. Features a turn-down collar, classic button placket, and a yoke at the back. Long sleeves and adjustable button cuffs with a rounded hem.",
-    price: 34.99,
-    discountPrice: 29.99,
-    countInStock: 30,
-    sku: "SLIM-EIR-005",
-    category: "Top Wear",
-    brand: "Urban Chic",
-    sizes: ["S", "M", "L", "XL"],
-    colors: ["White", "Gray"],
-    collections: "Business Wear",
-    material: "Cotton",
-    gender: "Men",
-    images: [
-      {
-        url: "https://picsum.photos/500/500?random=47",
-        altText: "Slim-Fit Easy-Iron Shirt Front View",
-      },
-      {
-        url: "https://picsum.photos/500/500?random=2",
-        altText: "Slim-Fit Easy-Iron Shirt Front View",
-      },
-    ],
-    rating: 5,
-    numReviews: 14,
   },
   {
     name: "Polo T-Shirt with Ribbed Collar",
@@ -158,11 +138,11 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=3",
+        url: "https://www.tomatostores.com/cdn/shop/files/TM-9138Beige_2_1000x.png?v=1777972687",
         altText: "Polo T-Shirt Front View",
       },
       {
-        url: "https://picsum.photos/500/500?random=4",
+        url: "https://www.tomatostores.com/cdn/shop/files/TM-9138Beige_4_1000x.png?v=1777972687",
         altText: "Polo T-Shirt Back View",
       },
     ],
@@ -186,8 +166,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=5",
+        url: "https://mediahub.boohoo.com/cmm17646_black_xl?qlt=70&w=549&ssz=true&dpr=1",
         altText: "Oversized Graphic T-Shirt Front View",
+      },
+      {
+        url: "https://mediahub.boohoo.com/cmm17646_black_xl_1?qlt=70&w=549&ssz=true&dpr=1",
+        altText: "Oversized Graphic T-Shirt Back View",
       },
     ],
     rating: 4.6,
@@ -210,8 +194,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=6",
+        url: "https://images-na.ssl-images-amazon.com/images/I/81PNnSN6SsL.jpg",
         altText: "Regular-Fit Henley Shirt Front View",
+      },
+      {
+        url: "https://images-na.ssl-images-amazon.com/images/I/81a-fxQ2QSL.jpg",
+        altText: "Regular-Fit Henley Shirt Back View",
       },
     ],
     rating: 4.5,
@@ -234,8 +222,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=7",
+        url: "https://threadfellows.com/cdn/shop/products/new-era-t-shirts-new-era-men-s-thermal-long-sleeve-28508668624919.jpg?v=1640866941&width=1000",
         altText: "Long-Sleeve Thermal Tee Front View",
+      },
+      {
+        url: "https://threadfellows.com/cdn/shop/products/new-era-t-shirts-new-era-men-s-thermal-long-sleeve-28508668493847.jpg?v=1640866945&width=1000",
+        altText: "Long-Sleeve Thermal Tee Back View",
       },
     ],
     rating: 4.4,
@@ -258,8 +250,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=8",
+        url: "https://cdn.shopify.com/s/files/1/0747/0950/0195/files/864007-WHITE-1_1000x1000.jpg?v=1740451106",
         altText: "V-Neck Classic T-Shirt Front View",
+      },
+      {
+        url: "https://cdn.shopify.com/s/files/1/0747/0950/0195/files/864007-WHITE-5_0add846c-9722-41ab-813a-37a2686f72e5_1000x1000.jpg?v=1740451106",
+        altText: "V-Neck Classic T-Shirt Back View",
       },
     ],
     rating: 4.7,
@@ -282,8 +278,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=9",
+        url: "https://jkattire.co.uk/cdn/shop/files/NewShoot14D-Charcoal_0004_Photo02-01-2026_110952_05eac8a0-a68e-454d-a6dc-21c5c8914ae0_600x.jpg?v=1767862521",
         altText: "Slim Fit Joggers Front View",
+      },
+      {
+        url: "https://jkattire.co.uk/cdn/shop/files/NewShoot14D-Charcoal_0006_Photo02-01-2026_110934_600x.jpg?v=1767862521",
+        altText: "Slim Fit Joggers Side View",
       },
     ],
     rating: 4.5,
@@ -306,8 +306,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=10",
+        url: "https://jkattire.co.uk/cdn/shop/files/NYLONTRACKSUITGREY-10_600x.jpg?v=1757683690",
         altText: "Cargo Joggers Front View",
+      },
+      {
+        url: "https://jkattire.co.uk/cdn/shop/files/NYLONTRACKSUITGREY-6_600x.jpg?v=1757683690",
+        altText: "Cargo Joggers Side View",
       },
     ],
     rating: 4.7,
@@ -330,8 +334,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=11",
+        url: "https://jkattire.co.uk/cdn/shop/files/5_8d802053-9146-46b7-b6cf-44a85ddec1cc_600x.jpg?v=1731925990",
         altText: "Tapered Sweatpants Front View",
+      },
+      {
+        url: "https://jkattire.co.uk/cdn/shop/files/4_f9acfeb5-ad06-4a00-8317-407165b1c412_600x.jpg?v=1731925984",
+        altText: "Tapered Sweatpants Side View",
       },
     ],
     rating: 4.3,
@@ -354,8 +362,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=12",
+        url: "https://jkattire.co.uk/cdn/shop/files/CurveSeamWashedDenimJeans-15_600x.jpg?v=1779169138",
         altText: "Denim Jeans Front View",
+      },
+      {
+        url: "https://jkattire.co.uk/cdn/shop/files/CurveSeamWashedDenimJeans-13_600x.jpg?v=1779169138",
+        altText: "Denim Jeans Side View",
       },
     ],
     rating: 4.6,
@@ -378,8 +390,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=13",
+        url: "https://jkattire.co.uk/cdn/shop/files/CrinkleTechTracksuitCharcoal-8_13300743-dc5d-4ab1-b2c5-0c288442e614_600x.jpg?v=1785745968",
         altText: "Chino Pants Front View",
+      },
+      {
+        url: "https://jkattire.co.uk/cdn/shop/files/CrinkleTechTracksuitCharcoal-9_600x.jpg?v=1785746003",
+        altText: "Chino Pants Side View",
       },
     ],
     rating: 4.8,
@@ -402,7 +418,11 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=14",
+        url: "https://jkattire.co.uk/cdn/shop/files/EssentialTracksuitGreyMarl-10_aa680cee-c540-4957-856a-4592fd9d1f61_600x.jpg?v=1788778565",
+        altText: "Track Pants Side View",
+      },
+      {
+        url: "https://jkattire.co.uk/cdn/shop/files/EssentialTracksuitGreyMarl-12_600x.jpg?v=1788778573",
         altText: "Track Pants Front View",
       },
     ],
@@ -426,7 +446,7 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=15",
+        url: "https://jkattire.co.uk/cdn/shop/files/NewShoot14B-Charcoal_0009_Photo02-01-2026_112609_600x.jpg?v=1767862910",
         altText: "Slim Fit Trousers Front View",
       },
     ],
@@ -450,8 +470,12 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=16",
+        url: "https://jkattire.co.uk/cdn/shop/files/NYLONTRACKSUITGREY-10_600x.jpg?v=1757683690",
         altText: "Cargo Pants Front View",
+      },
+      {
+        url: "https://jkattire.co.uk/cdn/shop/files/NYLONTRACKSUITGREY-6_600x.jpg?v=1757683690",
+        altText: "Cargo Pants Side View",
       },
     ],
     rating: 4.5,
@@ -474,7 +498,7 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=17",
+        url: "https://jkattire.co.uk/cdn/shop/files/DSC00567_e9c06a55-f10f-4005-ad85-1e893ed607c1_600x.jpg?v=1753862784",
         altText: "Relaxed Fit Sweatpants Front View",
       },
     ],
@@ -498,7 +522,7 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=18",
+        url: "https://jkattire.co.uk/cdn/shop/files/RipstopCargoBlack-2_600x.jpg?v=1785873389",
         altText: "Formal Dress Pants Front View",
       },
     ],
@@ -522,8 +546,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=19",
-        altText: "High-Waist Skinny Jeans",
+        url: "https://images.express.com/is/image/expressfashion/0091_07192575_0018_f001?cache=on&wid=480&fmt=jpeg&qlt=85,1&resmode=sharp2&op_usm=1,1,5,0&defaultImage=Photo-Coming-Soon",
+        altText: "High-Waist Skinny Jeans 1",
+      },
+      {
+        url: "https://images.express.com/is/image/expressfashion/0091_07192575_0018_f002?cache=on&wid=480&fmt=jpeg&qlt=85,1&resmode=sharp2&op_usm=1,1,5,0&defaultImage=Photo-Coming-Soon",
+        altText: "High-Waist Skinny Jeans 2",
       },
     ],
     rating: 4.8,
@@ -546,7 +574,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=20",
+        url: "https://media.vogue.co.uk/photos/68e63719b00b31df61c2a9e2/2:3/w_1920,c_limit/Paris%20str%20S26%202180.jpg",
         altText: "Wide-Leg Trousers Front View",
       },
     ],
@@ -570,7 +598,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=21",
+        url: "https://www.marika.com/cdn/shop/files/CopyofResizingFramefor1200x1800PDPs_98_e33a4aca-87fd-4342-b5cb-c02f7287509e_conv.jpg?v=1774470440&width=832",
         altText: "Stretch Leggings Front View",
       },
     ],
@@ -594,8 +622,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=22",
-        altText: "Pleated Midi Skirt Front View",
+        url: "https://i.etsystatic.com/5801632/r/il/603f38/1795072614/il_794xN.1795072614_9k0c.jpg",
+        altText: "Pleated Midi Skirt 1",
+      },
+      {
+        url: "https://i.etsystatic.com/5801632/r/il/a1ec39/1480499106/il_794xN.1480499106_4gmw.jpg",
+        altText: "Pleated Midi Skirt 2",
       },
     ],
     rating: 4.6,
@@ -618,8 +650,16 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=23",
-        altText: "Flared Palazzo Pants Front View",
+        url: "https://i.etsystatic.com/25055319/r/il/2b0872/8406283025/il_794xN.8406283025_q6c0.jpg",
+        altText: "Flared Palazzo Pants 1",
+      },
+      {
+        url: "https://i.etsystatic.com/25055319/r/il/3cc6f2/8406283435/il_794xN.8406283435_gvwh.jpg",
+        altText: "Flared Palazzo Pants 2",
+      },
+      {
+        url: "https://i.etsystatic.com/25055319/r/il/cd9460/8406283437/il_794xN.8406283437_qq4j.jpg",
+        altText: "Flared Palazzo Pants 3",
       },
     ],
     rating: 4.4,
@@ -642,7 +682,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=24",
+        url: "https://scandinavianoutdoor.imgix.net/dynamic/productimages/sizes/full/6f69a76f-63c9-4c72-9aa3-18eb885af271.jpeg?w=960&h=960&fit=max&trim=auto&trim-sd=1&blend-mode=multiply&blend=efefef&auto=format,compress",
         altText: "High-Rise Joggers Front View",
       },
     ],
@@ -666,8 +706,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=25",
-        altText: "Paperbag Waist Shorts Front View",
+        url: "https://i.etsystatic.com/30343694/r/il/e7e3bf/6260410356/il_794xN.6260410356_ox8d.jpg",
+        altText: "Paperbag Waist Shorts 1",
+      },
+      {
+        url: "https://i.etsystatic.com/30343694/r/il/f2ce84/5617920047/il_794xN.5617920047_55lu.jpg",
+        altText: "Paperbag Waist Shorts 2",
       },
     ],
     rating: 4.5,
@@ -690,8 +734,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=26",
-        altText: "Stretch Denim Shorts Front View",
+        url: "https://i.etsystatic.com/14706886/r/il/d7a5e8/7849155955/il_794xN.7849155955_a0j7.jpg",
+        altText: "Stretch Denim Shorts 1",
+      },
+      {
+        url: "https://i.etsystatic.com/14706886/r/il/07f41f/7849156153/il_794xN.7849156153_9ab4.jpg",
+        altText: "Stretch Denim Shorts 2",
       },
     ],
     rating: 4.7,
@@ -714,8 +762,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=27",
-        altText: "Culottes Front View",
+        url: "https://i.etsystatic.com/16064614/r/il/ad0d31/2098465340/il_794xN.2098465340_rw9f.jpg",
+        altText: "Culottes 1",
+      },
+      {
+        url: "https://i.etsystatic.com/16064614/r/il/e154dd/2146020799/il_794xN.2146020799_mf3f.jpg",
+        altText: "Culottes 1",
       },
     ],
     rating: 4.6,
@@ -738,8 +790,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=28",
-        altText: "Classic Pleated Trousers Front View",
+        url: "https://cdn-images.farfetch-contents.com/20/90/52/75/20905275_50879527_1000.jpg",
+        altText: "Classic Pleated Trousers 1",
+      },
+      {
+        url: "https://cdn-images.farfetch-contents.com/20/90/52/75/20905275_50879530_1000.jpg",
+        altText: "Classic Pleated Trousers 2",
       },
     ],
     rating: 4.8,
@@ -762,8 +818,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=29",
-        altText: "Knitted Cropped Top",
+        url: "https://i.etsystatic.com/8782980/r/il/e13701/8590066796/il_794xN.8590066796_5tel.jpg",
+        altText: "Knitted Cropped Top 1",
+      },
+      {
+        url: "https://i.etsystatic.com/8782980/r/il/efff31/8637905115/il_794xN.8637905115_j2ur.jpg",
+        altText: "Knitted Cropped Top 1",
       },
     ],
     rating: 4.6,
@@ -786,7 +846,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=30",
+        url: "https://i.etsystatic.com/67203594/r/il/08a660/8607437699/il_794xN.8607437699_gihk.jpg",
         altText: "Boho Floral Blouse",
       },
     ],
@@ -810,7 +870,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=31",
+        url: "https://cupidclothings.com/cdn/shop/files/1_bf64b110-c554-4cce-a6d2-a8baa3378d73.jpg?v=1724413330&width=1445",
         altText: "Casual T-Shirt",
       },
     ],
@@ -834,8 +894,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=32",
-        altText: "Off-Shoulder Top",
+        url: "https://i.etsystatic.com/22588046/r/il/8970a1/7381792441/il_794xN.7381792441_macs.jpg",
+        altText: "Off-Shoulder Top 1",
+      },
+      {
+        url: "https://i.etsystatic.com/22588046/r/il/11532b/7333917140/il_794xN.7333917140_k93k.jpg",
+        altText: "Off-Shoulder Top 2",
       },
     ],
     rating: 4.7,
@@ -858,7 +922,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=33",
+        url: "https://i.etsystatic.com/65187457/r/il/6ac0a5/8199896950/il_794xN.8199896950_omod.jpg",
         altText: "Lace-Trimmed Cami Top",
       },
     ],
@@ -882,11 +946,19 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=34",
-        altText: "Graphic Print Tee",
+        url: "https://i.etsystatic.com/8895908/r/il/0b9336/8317096768/il_794xN.8317096768_qu1u.jpg",
+        altText: "Graphic Print Tee 1",
+      },
+      {
+        url: "https://i.etsystatic.com/8895908/r/il/6dcda5/8364705187/il_794xN.8364705187_cnsd.jpg",
+        altText: "Graphic Print Tee 2",
+      },
+      {
+        url: "https://i.etsystatic.com/8895908/r/il/ff0067/8316813722/il_794xN.8316813722_phd7.jpg",
+        altText: "Graphic Print Tee 3",
       },
     ],
-    rating: 4.6,
+    rating: 5.0,
     numReviews: 30,
   },
   {
@@ -906,8 +978,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=35",
-        altText: "Ribbed Long-Sleeve Top",
+        url: "https://i.etsystatic.com/66538654/r/il/40e0f3/8299046937/il_794xN.8299046937_atjs.jpg",
+        altText: "Ribbed Long-Sleeve Top 1",
+      },
+      {
+        url: "https://i.etsystatic.com/66538654/r/il/d2c186/8299055381/il_794xN.8299055381_rdjp.jpg",
+        altText: "Ribbed Long-Sleeve Top 2",
       },
     ],
     rating: 4.7,
@@ -930,7 +1006,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=36",
+        url: "https://i.etsystatic.com/65469789/r/il/6167ff/8413049172/il_794xN.8413049172_t3is.jpg",
         altText: "Ruffle-Sleeve Blouse",
       },
     ],
@@ -954,7 +1030,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=37",
+        url: "https://i.etsystatic.com/25609934/r/il/b5b788/6775513449/il_794xN.6775513449_tit6.jpg",
         altText: "Classic Button-Up Shirt",
       },
     ],
@@ -978,8 +1054,12 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=38",
-        altText: "V-Neck Wrap Top",
+        url: "https://i.etsystatic.com/64200887/r/il/6a9c4c/8653871681/il_794xN.8653871681_sqjm.jpg",
+        altText: "V-Neck Wrap Top 1",
+      },
+      {
+        url: "https://i.etsystatic.com/64200887/r/il/29bbbe/8653871745/il_794xN.8653871745_kjdy.jpg",
+        altText: "V-Neck Wrap Top 2",
       },
     ],
     rating: 4.7,
@@ -1002,7 +1082,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=39",
+        url: "https://i.etsystatic.com/68129997/r/il/752b51/8703299424/il_794xN.8703299424_qbax.jpg",
         altText: "Elegant Satin Blouse",
       },
     ],
@@ -1026,7 +1106,7 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=40",
+        url: "https://i.etsystatic.com/35566366/r/il/7e7804/6605733726/il_794xN.6605733726_49h2.jpg",
         altText: "Classic Slim Fit Jeans",
       },
     ],
@@ -1050,7 +1130,7 @@ export const products = [
     gender: "Unisex",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=41",
+        url: "https://i.etsystatic.com/46432211/r/il/054692/7857171936/il_794xN.7857171936_c6l5.jpg",
         altText: "Oversized Graphic T-Shirt",
       },
     ],
@@ -1074,7 +1154,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=42",
+        url: "https://i.etsystatic.com/64394463/r/il/cbf575/8302647816/il_794xN.8302647816_lw5p.jpg",
         altText: "Tailored Wide Leg Trousers",
       },
     ],
@@ -1098,8 +1178,12 @@ export const products = [
     gender: "Unisex",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=43",
-        altText: "Classic Leather Biker Jacket",
+        url: "https://i.etsystatic.com/57468094/r/il/2eaa63/7278019637/il_794xN.7278019637_93hy.jpg",
+        altText: "Classic Leather Biker Jacket 1",
+      },
+      {
+        url: "https://i.etsystatic.com/57468094/r/il/30df14/6897703541/il_794xN.6897703541_fqlp.jpg",
+        altText: "Classic Leather Biker Jacket 1",
       },
     ],
     rating: 4.9,
@@ -1118,12 +1202,16 @@ export const products = [
     sizes: ["S", "M", "L"],
     colors: ["Pink", "Blue", "Yellow"],
     collections: "Summer Collection",
-    material: "Viscose",
+    material: "Cotton",
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=44",
-        altText: "Floral Midi Summer Dress",
+        url: "https://i.etsystatic.com/55962003/r/il/f3395c/8046847023/il_794xN.8046847023_gtdc.jpg",
+        altText: "Floral Midi Summer Dress 1",
+      },
+      {
+        url: "https://i.etsystatic.com/55962003/r/il/773b92/7998907904/il_794xN.7998907904_bf7h.jpg",
+        altText: "Floral Midi Summer Dress 2",
       },
     ],
     rating: 4.8,
@@ -1146,7 +1234,7 @@ export const products = [
     gender: "Unisex",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=45",
+        url: "https://i.etsystatic.com/68326287/r/il/402d28/8731503669/il_794xN.8731503669_aw0z.jpg",
         altText: "Minimalist Cotton Hoodie",
       },
     ],
@@ -1170,8 +1258,16 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=46",
-        altText: "Premium Oxford Shirt",
+        url: "https://i.etsystatic.com/7716521/r/il/320f03/7980322375/il_794xN.7980322375_9t57.jpg",
+        altText: "Premium Oxford Shirt 1",
+      },
+      {
+        url: "https://i.etsystatic.com/7716521/r/il/cd7de3/7932367838/il_794xN.7932367838_50lr.jpg",
+        altText: "Premium Oxford Shirt 2",
+      },
+      {
+        url: "https://i.etsystatic.com/7716521/r/il/8c29c6/6638581909/il_794xN.6638581909_1r9q.jpg",
+        altText: "Premium Oxford Shirt 3",
       },
     ],
     rating: 4.7,
@@ -1194,7 +1290,7 @@ export const products = [
     gender: "Women",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=47",
+        url: "https://i.etsystatic.com/6811060/r/il/b50bea/7230324807/il_794xN.7230324807_ayen.jpg",
         altText: "High-Waisted Pleated Skirt",
       },
     ],
@@ -1218,7 +1314,7 @@ export const products = [
     gender: "Men",
     images: [
       {
-        url: "https://picsum.photos/500/500?random=48",
+        url: "https://i.etsystatic.com/60153825/r/il/09e84b/7360677968/il_510x638.7360677968_6b4c.jpg",
         altText: "Lightweight Bomber Jacket",
       },
     ],

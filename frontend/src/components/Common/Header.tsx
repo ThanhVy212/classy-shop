@@ -1,18 +1,14 @@
 import Topbar from "../Layout/Topbar.tsx";
 import Navbar from "./Navbar.tsx";
 import { useEffect, useRef, useState } from "react";
-import { useWindowScroll } from "../../hooks/useWindowScroll.ts";
+import { useHeaderScroll } from "../../hooks/useHeaderScroll.ts";
 
 const Header = () => {
-    const [lastScrollY, setLastScrollY] = useState(0);
-    const [isNavVisible, setIsNavVisible] = useState(true);
-    const [isFloating, setIsFloating] = useState(false);
+    const { isNavVisible, isFloating } = useHeaderScroll();
     const navContainerRef = useRef<HTMLElement | null>(null);
     const topbarRef = useRef<HTMLDivElement | null>(null);
     const navbarRef = useRef<HTMLDivElement | null>(null);
     const [headerHeight, setHeaderHeight] = useState<number>(0);
-
-    const { y: currentScrollY } = useWindowScroll();
 
     // Dynamically calculate the uncollapsed full header height
     useEffect(() => {
@@ -45,22 +41,12 @@ const Header = () => {
     }, []);
 
     useEffect(() => {
-        if (currentScrollY <= 10) {
-            setIsNavVisible(true);
-            setIsFloating(false);
+        if (!isFloating) {
             navContainerRef.current?.classList.remove("floating-nav");
-        } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
-            setIsNavVisible(false);
-            setIsFloating(true);
-            navContainerRef.current?.classList.add("floating-nav");
-        } else if (currentScrollY < lastScrollY) {
-            setIsNavVisible(true);
-            setIsFloating(true);
+        } else {
             navContainerRef.current?.classList.add("floating-nav");
         }
-
-        setLastScrollY(currentScrollY);
-    }, [currentScrollY, lastScrollY]);
+    }, [isFloating]);
 
     return (
         <>
