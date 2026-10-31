@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Maximize2,
+  ImageOff,
 } from "lucide-react";
 
 interface ProductImageZoomProps {
@@ -58,6 +59,7 @@ const ProductImageZoom = ({
 
   // Open / Close modal
   const openModal = () => {
+    if (!src) return;
     setIsModalOpen(true);
     setModalZoom(1.5);
     setModalPan({ x: 0, y: 0 });
@@ -206,35 +208,47 @@ const ProductImageZoom = ({
         }}
         onTouchMove={handleTouchMove}
         onClick={openModal}
-        className="relative mb-4 overflow-hidden rounded-xl bg-gray-50/70 border border-gray-100 cursor-zoom-in group select-none flex items-center justify-center max-h-[550px] w-full"
-        title="Click to expand high-res zoom"
-        role="button"
-        tabIndex={0}
+        className={`relative mb-4 overflow-hidden rounded-2xl bg-[var(--color-surface-muted)] border border-[var(--color-border)] group select-none flex items-center justify-center max-h-[550px] w-full ${
+          src ? "cursor-zoom-in" : "cursor-default"
+        }`}
+        title={src ? "Click to expand high-res zoom" : alt}
+        role={src ? "button" : "img"}
+        tabIndex={src ? 0 : -1}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             openModal();
           }
         }}
-        aria-label="Zoom in product image"
+        aria-label={src ? "Zoom in product image" : alt}
       >
-        <img
-          src={src}
-          alt={alt}
-          className="w-full h-auto max-h-[550px] object-cover rounded-xl pointer-events-none transition-transform"
-          style={{
-            transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-            transform: isHovered ? "scale(2.4)" : "scale(1)",
-            transition: isHovered
-              ? "transform 0.12s cubic-bezier(0.16, 1, 0.3, 1)"
-              : "transform 0.3s ease-out",
-            willChange: "transform",
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-          }}
-          loading="eager"
-        />
-
+        {src ? (
+          <img
+            src={src}
+            alt={alt}
+            className="w-full h-auto max-h-[550px] object-cover rounded-xl pointer-events-none transition-transform"
+            style={{
+              transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+              transform: isHovered ? "scale(2.4)" : "scale(1)",
+              transition: isHovered
+                ? "transform 0.12s cubic-bezier(0.16, 1, 0.3, 1)"
+                : "transform 0.3s ease-out",
+              willChange: "transform",
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
+            }}
+            loading="eager"
+          />
+        ) : (
+          <div className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-2 text-[var(--color-ink-muted)]">
+            <ImageOff className="h-8 w-8" />
+            <span className="text-[11px] font-medium uppercase tracking-[0.18em]">
+              No image yet
+            </span>
+          </div>
+        )}
+        {src && (
+          <>
         {/* Floating Action Pill: Fullscreen Button */}
         <button
           type="button"
@@ -255,12 +269,14 @@ const ProductImageZoom = ({
 
         {/* Subtle Top-Left Magnifier Indicator */}
         <div
-          className={`absolute top-3.5 left-3.5 bg-white/80 text-gray-700 text-[11px] font-medium px-2.5 py-1 rounded-md backdrop-blur-xs shadow-xs transition-opacity duration-200 pointer-events-none ${
+          className={`absolute top-3.5 left-3.5 bg-[var(--color-surface)]/85 text-[var(--color-ink-soft)] border border-[var(--color-border)] text-[11px] font-medium px-2.5 py-1 rounded-md backdrop-blur-xs shadow-xs transition-opacity duration-200 pointer-events-none ${
             isHovered ? "opacity-100" : "opacity-0"
           }`}
         >
           2.4x Zoom
         </div>
+          </>
+        )}
       </div>
 
       {/* =========================================================================

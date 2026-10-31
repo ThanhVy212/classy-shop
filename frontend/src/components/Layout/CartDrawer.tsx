@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import CartContent from "../Cart/CartContent.tsx";
 import Button from "../Common/Button.tsx";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../hooks/useCart.ts";
 import { useAuth } from "../../hooks/useAuth.ts";
 import { toast } from "sonner";
@@ -74,6 +74,14 @@ const CartDrawer = ({ drawerOpen, toggleCartDrawer }: CartDrawerProps) => {
             >
               Checkout
             </Button>
+
+            <Link
+              to="/cart"
+              onClick={toggleCartDrawer}
+              className="mt-2.5 block text-center text-xs font-semibold text-[var(--color-ink-soft)] underline underline-offset-4 transition-colors hover:text-[var(--color-primary)]"
+            >
+              View full bag
+            </Link>
 
             <p className="text-sm tracking-tighter text-gray-500 mt-2 text-center">
               Shipping, taxes, and discount codes calculated at checkout.

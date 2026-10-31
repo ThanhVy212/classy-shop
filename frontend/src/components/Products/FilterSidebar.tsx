@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Minus } from "lucide-react";
 import { getColorStyle } from "../../utils/colors.ts";
+import { catalogService } from "../../services/catalogService.ts";
+import type { CatalogType } from "../../types/catalog.ts";
 import { SORT_OPTIONS } from "./SortOptions.tsx";
 
 interface FilterSidebarProps {
@@ -26,6 +28,11 @@ const FilterSidebar = ({ showSortSection = true }: FilterSidebarProps) => {
     });
 
     const [priceRange, setPriceRange] = useState([0, 100]);
+    const [catalog, setCatalog] = useState<Record<CatalogType, string[]>>({
+        category: [],
+        brand: [],
+        material: [],
+    });
 
     // Accordion state: all collapsed by default as in sample
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -46,7 +53,9 @@ const FilterSidebar = ({ showSortSection = true }: FilterSidebarProps) => {
         }));
     };
 
-    const categories = ["Top Wear", "Bottom Wear", "Outerwear", "Dresses"];
+    const categories = Array.from(
+        new Set([...catalog.category, filters.category].filter(Boolean))
+    );
     const colors = [
         "Red",
         "Blue",
@@ -62,24 +71,12 @@ const FilterSidebar = ({ showSortSection = true }: FilterSidebarProps) => {
         "Burgundy",
     ];
     const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-    const materials = [
-        "Cotton",
-        "Wool",
-        "Denim",
-        "Polyester",
-        "Silk",
-        "Linen",
-        "Viscose",
-        "Fleece",
-    ];
-    const brands = [
-        "Urban Threads",
-        "Modern Fit",
-        "Street Style",
-        "Beach Breeze",
-        "Fashionista",
-        "ChicStyle",
-    ];
+    const materials = Array.from(
+        new Set([...catalog.material, ...filters.material].filter(Boolean))
+    );
+    const brands = Array.from(
+        new Set([...catalog.brand, ...filters.brand].filter(Boolean))
+    );
     const genders = ["Men", "Women", "Unisex"];
 
     const currentSort = searchParams.get("sortBy") || "dateDesc";
@@ -103,6 +100,31 @@ const FilterSidebar = ({ showSortSection = true }: FilterSidebarProps) => {
 
         setPriceRange([minPrice, maxPrice]);
     }, [searchParams]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        Promise.all([
+            catalogService.getItems("category"),
+            catalogService.getItems("brand"),
+            catalogService.getItems("material"),
+        ])
+            .then(([categoriesData, brandsData, materialsData]) => {
+                if (!isMounted) return;
+                setCatalog({
+                    category: categoriesData.map((item) => item.name),
+                    brand: brandsData.map((item) => item.name),
+                    material: materialsData.map((item) => item.name),
+                });
+            })
+            .catch((error) => {
+                console.warn("Could not load catalog filters:", error);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     useEffect(() => {
         return () => {
@@ -361,6 +383,11 @@ const FilterSidebar = ({ showSortSection = true }: FilterSidebarProps) => {
 
                 {expandedSections.category && (
                     <div className="px-6 pb-6 pt-1 animate-in fade-in duration-200">
+                        {categories.length === 0 && (
+                            <p className="text-xs text-gray-400">
+                                No categories available yet.
+                            </p>
+                        )}
                         {categories.map((category) => (
                             <label key={category} className="flex items-center mb-2.5 cursor-pointer group">
                                 <input
@@ -556,6 +583,11 @@ const FilterSidebar = ({ showSortSection = true }: FilterSidebarProps) => {
 
                 {expandedSections.material && (
                     <div className="px-6 pb-6 pt-1 animate-in fade-in duration-200">
+                        {materials.length === 0 && (
+                            <p className="text-xs text-gray-400">
+                                No materials available yet.
+                            </p>
+                        )}
                         {materials.map((material) => (
                             <label key={material} className="flex items-center mb-2.5 cursor-pointer group">
                                 <input
@@ -600,6 +632,11 @@ const FilterSidebar = ({ showSortSection = true }: FilterSidebarProps) => {
 
                 {expandedSections.brand && (
                     <div className="px-6 pb-6 pt-1 animate-in fade-in duration-200">
+                        {brands.length === 0 && (
+                            <p className="text-xs text-gray-400">
+                                No brands available yet.
+                            </p>
+                        )}
                         {brands.map((brand) => (
                             <label key={brand} className="flex items-center mb-2.5 cursor-pointer group">
                                 <input

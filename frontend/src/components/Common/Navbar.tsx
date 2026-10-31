@@ -32,7 +32,7 @@ const Navbar = () => {
                     <Link to="/">
                         <div className="flex items-center">
                             <img src={logo} alt="logo" className="w-9 h-9 sm:w-10 sm:h-10 object-contain mr-2" />
-                            <div className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 hidden sm:block">
+                            <div className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--color-ink)] hidden sm:block">
                                 ClassyShop
                             </div>
                         </div>
@@ -45,7 +45,7 @@ const Navbar = () => {
                         <Link
                             key={items.label}
                             to={items.href}
-                            className="text-gray-700 hover:text-black text-sm font-medium uppercase transition-colors"
+                            className="text-[var(--color-ink-soft)] hover:text-[var(--color-primary)] text-sm font-medium uppercase transition-colors"
                         >
                             {items.label}
                         </Link>
@@ -59,16 +59,16 @@ const Navbar = () => {
                         aria-label="Profile"
                         className="group flex items-center gap-1.5 sm:gap-2 transition-colors"
                     >
-                        <UserRound className="h-5 w-5 text-gray-600 group-hover:text-black transition-colors shrink-0" />
+                        <UserRound className="h-5 w-5 text-[var(--color-ink-soft)] group-hover:text-[var(--color-primary)] transition-colors shrink-0" />
                         {isAuthenticated && user?.name && (
-                            <span className="text-sm font-medium text-gray-700 group-hover:text-black transition-colors max-w-[90px] sm:max-w-[130px] md:max-w-[160px] truncate">
+                            <span className="text-sm font-medium text-[var(--color-ink-soft)] group-hover:text-[var(--color-primary)] transition-colors max-w-[90px] sm:max-w-[130px] md:max-w-[160px] truncate">
                                 {user.name}
                             </span>
                         )}
                     </Link>
 
                     <Button onClick={toggleDrawer} className="relative cursor-pointer" aria-label="Cart">
-                        <ShoppingCart className="h-5 w-5 text-gray-600 hover:text-black transition-colors" />
+                        <ShoppingCart className="h-5 w-5 text-[var(--color-ink-soft)] hover:text-[var(--color-primary)] transition-colors" />
                         {totalItems > 0 && (
                             <span className="badge-red absolute -top-1 -right-2">
                                 {totalItems > 99 ? "99+" : totalItems}
@@ -79,7 +79,7 @@ const Navbar = () => {
                     <SearchBar />
 
                     <Button onClick={toggleNavDrawer} className="md:hidden cursor-pointer" aria-label="Open menu">
-                        <Menu className="h-5 w-5 text-gray-600 hover:text-black transition-colors" />
+                        <Menu className="h-5 w-5 text-[var(--color-ink-soft)] hover:text-[var(--color-primary)] transition-colors" />
                     </Button>
                 </div>
             </nav>
@@ -103,45 +103,45 @@ const Navbar = () => {
                                 navDrawerOpen ? "translate-x-0" : "-translate-x-full"
                             }`}
                         >
-                            <div className="flex justify-end p-4 border-b border-gray-100">
+                            <div className="flex justify-end p-4 border-b border-[var(--color-border)]">
                                 <Button onClick={toggleNavDrawer} aria-label="Close menu" className="cursor-pointer">
-                                    <X className="h-6 w-6 text-gray-600 hover:text-black transition-colors" />
+                                    <X className="h-6 w-6 text-[var(--color-ink-soft)] hover:text-[var(--color-primary)] transition-colors" />
                                 </Button>
                             </div>
 
                             <div className="p-4 flex-1 overflow-y-auto better-scrollbar">
-                                <h2 className="text-xl font-semibold mb-4">Menu</h2>
+                                <h2 className="text-xl font-semibold text-[var(--color-ink)] mb-4">Menu</h2>
                                 <nav className="space-y-4">
                                     {mainNavigationLinks.map((items) => (
                                         <Link
                                             key={items.label}
                                             to={items.href}
                                             onClick={toggleNavDrawer}
-                                            className="text-gray-700 hover:text-black text-sm font-medium uppercase block transition-colors"
+                                            className="text-[var(--color-ink-soft)] hover:text-[var(--color-primary)] text-sm font-medium uppercase block transition-colors"
                                         >
                                             {items.label}
                                         </Link>
                                     ))}
                                 </nav>
 
-                                <div className="pt-6 mt-6 border-t border-gray-100">
+                                <div className="pt-6 mt-6 border-t border-[var(--color-border)]">
                                     {isAuthenticated && user ? (
                                         <Link
                                             to="/profile"
                                             onClick={toggleNavDrawer}
-                                            className="flex items-center gap-2.5 text-gray-700 hover:text-black font-medium text-sm transition-colors py-1"
+                                            className="flex items-center gap-2.5 text-[var(--color-ink-soft)] hover:text-[var(--color-primary)] font-medium text-sm transition-colors py-1"
                                         >
-                                            <UserRound className="h-5 w-5 text-gray-600 shrink-0" />
+                                            <UserRound className="h-5 w-5 text-[var(--color-ink-soft)] shrink-0" />
                                             <span className="truncate">{user.name}</span>
                                         </Link>
                                     ) : (
                                         <Link
                                             to="/login"
                                             onClick={toggleNavDrawer}
-                                            className="flex items-center gap-2.5 text-gray-700 hover:text-black font-medium text-sm transition-colors py-1"
+                                            className="flex items-center gap-2.5 text-[var(--color-ink-soft)] hover:text-[var(--color-primary)] font-medium text-sm transition-colors py-1"
                                         >
-                                            <UserRound className="h-5 w-5 text-gray-600 shrink-0" />
-                                            <span>Đăng nhập / Đăng ký</span>
+                                            <UserRound className="h-5 w-5 text-[var(--color-ink-soft)] shrink-0" />
+                                            <span>Login / Register</span>
                                         </Link>
                                     )}
                                 </div>

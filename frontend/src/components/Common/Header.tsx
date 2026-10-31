@@ -79,7 +79,7 @@ const Header = () => {
                 {/* Navbar with floating-nav styling when nailed at the top */}
                 <div
                     ref={navbarRef}
-                    className={`bg-white border-b border-gray-200 transition-all duration-300 ${
+                    className={`bg-[var(--color-surface)] border-b border-[var(--color-border)] transition-all duration-300 ${
                         isFloating ? "floating-nav" : ""
                     }`}
                 >

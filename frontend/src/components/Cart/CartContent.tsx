@@ -93,11 +93,17 @@ const CartContent = ({ onCloseDrawer }: CartContentProps) => {
             }`}
           >
             <div className="flex items-center min-w-0 pr-3">
-              <img
-                src={item.image || "https://picsum.photos/200"}
-                alt={item.name}
-                className="w-20 h-24 object-cover mr-4 rounded bg-gray-100 shrink-0"
-              />
+              <div className="mr-4 flex h-24 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
+                {item.image ? (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <ShoppingBag className="h-5 w-5 text-[var(--color-ink-muted)]" />
+                )}
+              </div>
 
               <div className="min-w-0">
                 <Link

@@ -6,6 +6,7 @@ import {
     Package,
     Users,
     Store,
+    Tags,
     LogOut,
     Menu,
     X,
@@ -21,6 +22,7 @@ const AdminLayout = () => {
     const navItems = [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard, end: true },
         { name: "Products", href: "/admin/products", icon: ShoppingBag, end: false },
+        { name: "Catalog", href: "/admin/catalog", icon: Tags, end: false },
         { name: "Orders", href: "/admin/orders", icon: Package, end: false },
         { name: "Users", href: "/admin/users", icon: Users, end: false },
     ];
@@ -31,7 +33,7 @@ const AdminLayout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100/70 flex">
+        <div className="min-h-screen bg-[var(--color-canvas)] flex">
             {/* Mobile Sidebar Backdrop */}
             {sidebarOpen && (
                 <div

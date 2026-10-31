@@ -13,14 +13,9 @@ import { toast } from "sonner";
 import { productService } from "../../services/productService.ts";
 import { uploadService } from "../../services/uploadService.ts";
 import { getColorStyle, getColorHex } from "../../utils/colors.ts";
+import TaxonomySelect from "./TaxonomySelect.tsx";
 
 const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "30", "32", "34"];
-const AVAILABLE_CATEGORIES = [
-    "Top Wear",
-    "Bottom Wear",
-    "Outerwear",
-    "Dresses",
-];
 const AVAILABLE_GENDERS = ["Men", "Women", "Unisex"] as const;
 
 const AVAILABLE_COLORS = [
@@ -62,21 +57,16 @@ const EditProduct = () => {
         description: isEditMode
             ? "Crafted from high-performance breathable fabric with clean tailoring for urban comfort and everyday style."
             : "",
-        category: "Top Wear",
+        category: "",
         gender: "Men",
-        brand: "ClassyShop",
-        material: "100% Organic Cotton",
+        brand: "",
+        material: "",
         price: isEditMode ? "120" : "",
         originalPrice: isEditMode ? "150" : "",
         stock: isEditMode ? "25" : "10",
         sizes: isEditMode ? ["S", "M", "L"] : ["M", "L"],
         colors: isEditMode ? ["Black", "Red"] : ["Black"],
-        images: isEditMode
-            ? [
-                  "https://picsum.photos/500/500?random=1",
-                  "https://picsum.photos/500/500?random=2",
-              ]
-            : ["https://picsum.photos/500/500?random=10"],
+        images: [] as string[],
     }));
 
     const [imageUrlInput, setImageUrlInput] = useState("");
@@ -92,10 +82,10 @@ const EditProduct = () => {
                             name: prod.name || "",
                             sku: prod.sku || "",
                             description: prod.description || "",
-                            category: prod.category || "Top Wear",
+                            category: prod.category || "",
                             gender: prod.gender || "Men",
-                            brand: prod.brand || "ClassyShop",
-                            material: prod.material || "100% Organic Cotton",
+                            brand: prod.brand || "",
+                            material: prod.material || "",
                             price: prod.price !== undefined ? String(prod.price) : "",
                             originalPrice:
                                 prod.discountPrice !== undefined ? String(prod.discountPrice) : "",
@@ -224,6 +214,11 @@ const EditProduct = () => {
             return;
         }
 
+        if (!formData.category) {
+            toast.error("Please select a category for this product");
+            return;
+        }
+
         setIsSaving(true);
         try {
             const productPayload = {
@@ -232,8 +227,8 @@ const EditProduct = () => {
                 description: formData.description.trim() || formData.name.trim(),
                 category: formData.category,
                 gender: formData.gender,
-                brand: formData.brand.trim() || "ClassyShop",
-                material: formData.material.trim() || "Cotton",
+                brand: formData.brand.trim() || undefined,
+                material: formData.material.trim() || undefined,
                 price: Number(formData.price) || 0,
                 discountPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
                 countInStock: Number(formData.stock) || 0,
@@ -345,16 +340,15 @@ const EditProduct = () => {
                         </div>
 
                         <div>
-                            <label className="form-label">
-                                Brand
-                            </label>
-                            <input
-                                type="text"
-                                name="brand"
+                            <TaxonomySelect
+                                type="brand"
+                                label="Brand"
                                 value={formData.brand}
-                                onChange={handleInputChange}
-                                placeholder="ClassyShop"
-                                className="form-input"
+                                onChange={(value) =>
+                                    setFormData((prev) => ({ ...prev, brand: value }))
+                                }
+                                placeholder="Select brand"
+                                disabled={isSaving || isUploadingImage}
                             />
                         </div>
                     </div>
@@ -444,21 +438,17 @@ const EditProduct = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-2">
                         {/* Category Selection */}
                         <div>
-                            <label className="form-label">
-                                Category *
-                            </label>
-                            <select
-                                name="category"
+                            <TaxonomySelect
+                                type="category"
+                                label="Category"
                                 value={formData.category}
-                                onChange={handleInputChange}
-                                className="form-select"
-                            >
-                                {AVAILABLE_CATEGORIES.map((cat) => (
-                                    <option key={cat} value={cat}>
-                                        {cat}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(value) =>
+                                    setFormData((prev) => ({ ...prev, category: value }))
+                                }
+                                required
+                                placeholder="Select category"
+                                disabled={isSaving || isUploadingImage}
+                            />
                         </div>
 
                         {/* Gender Target Selection */}
@@ -482,16 +472,15 @@ const EditProduct = () => {
 
                         {/* Material */}
                         <div>
-                            <label className="form-label">
-                                Fabric &amp; Material
-                            </label>
-                            <input
-                                type="text"
-                                name="material"
+                            <TaxonomySelect
+                                type="material"
+                                label="Fabric & Material"
                                 value={formData.material}
-                                onChange={handleInputChange}
-                                placeholder="100% Cotton, Denim, Silk"
-                                className="form-input"
+                                onChange={(value) =>
+                                    setFormData((prev) => ({ ...prev, material: value }))
+                                }
+                                placeholder="Select material"
+                                disabled={isSaving || isUploadingImage}
                             />
                         </div>
                     </div>

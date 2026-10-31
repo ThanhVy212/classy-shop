@@ -4,16 +4,16 @@ import {RiTwitterXLine} from "react-icons/ri";
 
 const Topbar = () => {
     return (
-        <div className="bg-black text-white">
+        <div className="bg-[var(--color-primary)] text-[#f6f1e8]">
             <div className="container mx-auto flex justify-between items-center py-3 px-4">
                 <div className="md:flex items-center space-x-4 hidden">
-                    <a href="#" className="hover:text-gray-300">
+                    <a href="#" className="transition-colors hover:text-white">
                         <TbBrandMeta className="h-5 w-5" />
                     </a>
-                    <a href="#" className="hover:text-gray-300">
+                    <a href="#" className="transition-colors hover:text-white">
                         <IoLogoInstagram className="h-5 w-5" />
                     </a>
-                    <a href="#" className="hover:text-gray-300">
+                    <a href="#" className="transition-colors hover:text-white">
                         <RiTwitterXLine className="h-4 w-4" />
                     </a>
                 </div>
@@ -23,7 +23,7 @@ const Topbar = () => {
                 </div>
 
                 <div className="text-sm hidden md:block">
-                    <a href="tel:+1234567890" className="hover:text-gray-300">+1 (234) 567-890</a>
+                    <a href="tel:+1234567890" className="transition-colors hover:text-white">+1 (234) 567-890</a>
                 </div>
             </div>
         </div>

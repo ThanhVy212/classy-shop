@@ -1,9 +1,48 @@
 @import "tailwindcss";
 
-.root {
+/*
+ * ClassyShop theme
+ * Reference direction: premium fashion storefronts such as Everlane, COS,
+ * Aritzia and Mango — warm ivory surfaces, soft ink, muted forest/sage CTAs and
+ * subtle sand borders. The palette stays bright and calm instead of relying on
+ * large black blocks, while CTAs keep enough contrast for accessibility.
+ */
+:root {
+  --color-canvas: #f7f3ec;
+  --color-surface: #fffdf8;
+  --color-surface-muted: #efe9df;
+  --color-ink: #2c2b28;
+  --color-ink-soft: #756f66;
+  --color-ink-muted: #9a9287;
+  --color-border: #e3dbcf;
+  --color-border-strong: #d4c9ba;
+  --color-primary: #4f6357;
+  --color-primary-hover: #3f5045;
+  --color-primary-soft: #e2ebe3;
+  --color-accent: #b07a5b;
+  --color-accent-soft: #f2e2d7;
+  --color-success: #5f7d68;
+  --color-danger: #a85757;
+  --color-deep: #2f3b33;
+  --color-deep-soft: #3a493e;
+}
+
+html {
+  background-color: var(--color-canvas);
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
   font-family: "Inter", sans-serif;
-  font-optical-sizing: auto;
-  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-primary-soft);
+  color: var(--color-ink);
 }
 
 /* Custom Scrollbar */
@@ -33,32 +72,32 @@
 
 .better-scrollbar:hover,
 .better-scrollbar.is-scrolling {
-  scrollbar-color: #cbd5e1 #f1f5f9;
+  scrollbar-color: #cbbfae #f1ebe1;
 }
 
 .better-scrollbar:hover::-webkit-scrollbar-track,
 .better-scrollbar.is-scrolling::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f1ebe1;
 }
 
 .better-scrollbar:hover::-webkit-scrollbar-thumb,
 .better-scrollbar.is-scrolling::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-color: #f1f5f9;
+  background-color: #cbbfae;
+  border-color: #f1ebe1;
 }
 
 .better-scrollbar::-webkit-scrollbar-thumb:hover,
 .better-scrollbar:hover::-webkit-scrollbar-thumb:hover,
 .better-scrollbar.is-scrolling::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
-  border-color: #f1f5f9;
+  background-color: #b6a895;
+  border-color: #f1ebe1;
 }
 
 .better-scrollbar::-webkit-scrollbar-thumb:active,
 .better-scrollbar:hover::-webkit-scrollbar-thumb:active,
 .better-scrollbar.is-scrolling::-webkit-scrollbar-thumb:active {
-  background-color: #64748b;
-  border-color: #f1f5f9;
+  background-color: #978871;
+  border-color: #f1ebe1;
 }
 
 @layer components {
@@ -66,15 +105,31 @@
      1. Buttons & Actions
      ========================================================================== */
   .btn-black {
-    @apply bg-black text-white hover:bg-gray-800 transition-all cursor-pointer;
+    @apply text-white transition-all cursor-pointer;
+    background-color: var(--color-primary);
+  }
+
+  .btn-black:hover {
+    background-color: var(--color-primary-hover);
   }
 
   .btn-primary-action {
-    @apply bg-black text-white hover:bg-gray-800 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer;
+    @apply text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer;
+    background-color: var(--color-primary);
+  }
+
+  .btn-primary-action:hover {
+    background-color: var(--color-primary-hover);
   }
 
   .btn-outline {
-    @apply px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer;
+    @apply px-4 py-2.5 rounded-xl border text-sm font-semibold transition cursor-pointer;
+    border-color: var(--color-border-strong);
+    color: var(--color-ink);
+  }
+
+  .btn-outline:hover {
+    background-color: var(--color-surface-muted);
   }
 
   .btn-action-delete {
@@ -86,18 +141,31 @@
   }
 
   .btn-action-view {
-    @apply p-1.5 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100 transition cursor-pointer;
+    @apply p-1.5 rounded-lg transition cursor-pointer;
+    color: var(--color-ink-soft);
+  }
+
+  .btn-action-view:hover {
+    color: var(--color-primary);
+    background-color: var(--color-primary-soft);
   }
 
   .btn-qty {
-    @apply border border-gray-300 rounded px-2 py-1 text-xl font-semibold hover:bg-gray-100 transition cursor-pointer;
+    @apply border rounded px-2 py-1 text-xl font-semibold transition cursor-pointer;
+    border-color: var(--color-border-strong);
+  }
+
+  .btn-qty:hover {
+    background-color: var(--color-surface-muted);
   }
 
   /* Button text slide up effect */
   .btn-text-slide {
     @apply relative inline-flex items-center justify-center
-    overflow-hidden bg-white px-6 py-3
-    text-lg font-medium text-gray-950 rounded-sm;
+    overflow-hidden px-6 py-3
+    text-lg font-medium rounded-sm;
+    background-color: var(--color-surface);
+    color: var(--color-ink);
   }
 
   .btn-text-slide .text-primary {
@@ -121,76 +189,149 @@
      2. Form Elements & Controls
      ========================================================================== */
   .input-base {
-    @apply text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all;
+    @apply text-sm border transition-all;
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+
+  .input-base:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
 
   .form-label {
-    @apply block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5;
+    @apply block text-xs font-semibold uppercase tracking-wider mb-1.5;
+    color: var(--color-ink-soft);
   }
 
   .form-label-md {
-    @apply block text-gray-700 font-medium mb-2;
+    @apply block font-medium mb-2;
+    color: var(--color-ink-soft);
   }
 
   .form-input {
-    @apply w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all;
+    @apply w-full px-3.5 py-2.5 rounded-xl border text-sm transition-all;
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+
+  .form-input::placeholder {
+    color: var(--color-ink-muted);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
 
   .form-select {
-    @apply w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black transition-all cursor-pointer;
+    @apply w-full px-3.5 py-2.5 rounded-xl border text-sm transition-all cursor-pointer;
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+
+  .form-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
 
   .form-checkbox {
-    @apply mr-2 h-4 w-4 text-black focus:ring-black accent-black rounded cursor-pointer;
+    @apply mr-2 h-4 w-4 rounded cursor-pointer;
+    accent-color: var(--color-primary);
   }
 
   .form-radio {
-    @apply mr-2 h-4 w-4 text-black focus:ring-black accent-black cursor-pointer;
+    @apply mr-2 h-4 w-4 cursor-pointer;
+    accent-color: var(--color-primary);
   }
 
   /* ==========================================================================
      3. Admin & Dashboard Elements
      ========================================================================== */
   .admin-search-input {
-    @apply w-full pl-9 pr-4 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all;
+    @apply w-full pl-9 pr-4 py-2 rounded-xl border text-sm transition-all;
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+
+  .admin-search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
 
   .admin-filter-select {
-    @apply w-full sm:w-auto px-3 py-2 rounded-xl border border-gray-300 text-xs sm:text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-all;
+    @apply w-full sm:w-auto px-3 py-2 rounded-xl border text-xs sm:text-sm font-medium cursor-pointer transition-all;
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+
+  .admin-filter-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
   }
 
   .admin-action-link {
-    @apply inline-flex items-center gap-1 text-xs font-semibold text-gray-700 hover:text-black hover:underline transition-colors;
+    @apply inline-flex items-center gap-1 text-xs font-semibold hover:underline transition-colors;
+    color: var(--color-ink-soft);
+  }
+
+  .admin-action-link:hover {
+    color: var(--color-primary);
   }
 
   .admin-stat-pill {
-    @apply bg-white p-4 rounded-xl border border-gray-200 shadow-xs;
+    @apply p-4 rounded-xl border shadow-xs;
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
   }
 
   .admin-stat-card {
-    @apply bg-white p-6 rounded-2xl border border-gray-200 shadow-xs hover:shadow-md transition-shadow;
+    @apply p-6 rounded-2xl border shadow-xs hover:shadow-md transition-shadow;
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
   }
 
   /* ==========================================================================
      4. Cards & Containers
      ========================================================================== */
   .card-container {
-    @apply bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden;
+    @apply rounded-2xl border shadow-xs overflow-hidden;
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
   }
 
   .card-padded {
-    @apply bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xs;
+    @apply p-6 sm:p-8 rounded-2xl border shadow-xs;
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
   }
 
   /* ==========================================================================
      5. Tables
      ========================================================================== */
   .table-head-row {
-    @apply bg-gray-50/70 text-xs uppercase text-gray-500 font-semibold border-b border-gray-100;
+    @apply text-xs uppercase font-semibold border-b;
+    background-color: color-mix(in srgb, var(--color-surface-muted) 65%, white);
+    color: var(--color-ink-soft);
+    border-color: var(--color-border);
   }
 
   .table-row-hover {
-    @apply hover:bg-gray-50/80 transition-colors;
+    @apply transition-colors;
+  }
+
+  .table-row-hover:hover {
+    background-color: color-mix(in srgb, var(--color-surface-muted) 50%, white);
   }
 
   .table-cell {
@@ -202,18 +343,23 @@
   }
 
   .table-footer {
-    @apply p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500;
+    @apply p-4 border-t flex items-center justify-between text-xs;
+    border-color: var(--color-border);
+    color: var(--color-ink-soft);
   }
 
   /* ==========================================================================
      6. Badges & Status Pills
      ========================================================================== */
   .badge-red {
-    @apply bg-red-600 text-white text-xs rounded-full px-2 py-0.5;
+    @apply text-white text-xs rounded-full px-2 py-0.5;
+    background-color: var(--color-accent);
   }
 
   .badge-counter {
-    @apply text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-200 text-gray-800;
+    @apply text-xs font-semibold px-2.5 py-1 rounded-full;
+    background-color: var(--color-surface-muted);
+    color: var(--color-ink-soft);
   }
 
   .status-badge {
@@ -241,47 +387,327 @@
   }
 
   .status-badge-neutral {
-    @apply bg-gray-100 text-gray-700 border-gray-200;
+    @apply border;
+    background-color: var(--color-surface-muted);
+    color: var(--color-ink-soft);
+    border-color: var(--color-border);
   }
 
   /* ==========================================================================
      7. Typography & Headings
      ========================================================================== */
   .page-title {
-    @apply text-2xl sm:text-3xl font-bold tracking-tight text-gray-900;
+    @apply text-2xl sm:text-3xl font-bold tracking-tight;
+    color: var(--color-ink);
   }
 
   .card-title {
-    @apply text-lg font-bold text-gray-900;
+    @apply text-lg font-bold;
+    color: var(--color-ink);
   }
 
   /* ==========================================================================
      8. Auth Pages
      ========================================================================== */
   .auth-card {
-    @apply w-full max-w-md bg-white p-8 rounded-lg border border-gray-200 shadow-sm;
+    @apply w-full max-w-md p-8 rounded-lg border shadow-sm;
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
   }
 
   .btn-auth-submit {
-    @apply w-full bg-black text-white p-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-all cursor-pointer;
+    @apply w-full text-white p-2.5 rounded-lg font-semibold transition-all cursor-pointer;
+    background-color: var(--color-primary);
+  }
+
+  .btn-auth-submit:hover {
+    background-color: var(--color-primary-hover);
   }
 
   /* ==========================================================================
      9. Navigation & Footer
      ========================================================================== */
   .floating-nav {
-    @apply shadow-md bg-white/95 backdrop-blur-md;
+    @apply shadow-md backdrop-blur-md;
+    background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
   }
 
   .footer-heading {
-    @apply text-lg text-black mb-4;
+    @apply text-lg mb-4;
+    color: var(--color-ink);
   }
 
   .footer-link {
-    @apply text-gray-600 hover:text-black transition-colors text-sm;
+    @apply transition-colors text-sm;
+    color: var(--color-ink-soft);
+  }
+
+  .footer-link:hover {
+    color: var(--color-primary);
   }
 
   .social-icon {
-    @apply text-black hover:text-gray-600 transition-colors;
+    @apply transition-colors;
+    color: var(--color-ink);
   }
+
+  .social-icon:hover {
+    color: var(--color-primary);
+  }
+
+  /* ==========================================================================
+     10. Checkout / Order Surfaces
+     ========================================================================== */
+  .checkout-card {
+    @apply rounded-3xl border;
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+    box-shadow: 0 1px 2px rgba(44, 43, 40, 0.04);
+  }
+
+  .checkout-primary-button {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-semibold text-white transition-all cursor-pointer;
+    background-color: var(--color-primary);
+  }
+
+  .checkout-primary-button:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .checkout-muted {
+    color: var(--color-ink-soft);
+  }
+}
+
+/* ==========================================================================
+   Theme compatibility layer
+   Keeps older utility-heavy components on the same warm palette without
+   rewriting every screen. Solid black blocks become muted forest/sage.
+   ========================================================================== */
+.bg-white {
+  background-color: var(--color-surface);
+}
+
+.bg-black {
+  background-color: var(--color-primary);
+}
+
+.bg-gray-50 {
+  background-color: #f8f4ed;
+}
+
+.bg-gray-100 {
+  background-color: #f1ebe1;
+}
+
+.bg-gray-200 {
+  background-color: #e7dfd3;
+}
+
+.bg-gray-800 {
+  background-color: var(--color-primary-hover);
+}
+
+.bg-gray-900 {
+  background-color: var(--color-deep-soft);
+}
+
+.bg-gray-950 {
+  background-color: var(--color-deep);
+}
+
+.hover\:bg-gray-800:hover,
+.hover\:bg-neutral-800:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.hover\:bg-gray-900:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.text-black,
+.hover\:text-black:hover {
+  color: var(--color-ink);
+}
+
+.border-black {
+  border-color: var(--color-primary);
+}
+
+.ring-black,
+.focus\:ring-black:focus {
+  --tw-ring-color: var(--color-primary);
+}
+
+.accent-black {
+  accent-color: var(--color-primary);
+}
+
+.border-gray-200 {
+  border-color: var(--color-border);
+}
+
+.border-gray-300 {
+  border-color: var(--color-border-strong);
+}
+
+.border-gray-100 {
+  border-color: var(--color-border);
+}
+
+.text-gray-400 {
+  color: var(--color-ink-muted);
+}
+
+.text-gray-500,
+.text-gray-600 {
+  color: var(--color-ink-soft);
+}
+
+.text-gray-700 {
+  color: #5f594f;
+}
+
+.text-gray-800,
+.text-gray-900,
+.text-gray-950 {
+  color: var(--color-ink);
+}
+
+.hover\:bg-gray-50:hover,
+.hover\:bg-gray-100:hover {
+  background-color: var(--color-surface-muted);
+}
+
+.bg-gray-50\/50,
+.bg-gray-50\/60,
+.bg-gray-50\/70,
+.bg-gray-50\/80 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-surface-muted) 60%,
+    transparent
+  );
+}
+
+.bg-gray-100\/70,
+.bg-gray-100\/80 {
+  background-color: color-mix(
+    in srgb,
+    var(--color-surface-muted) 80%,
+    transparent
+  );
+}
+
+.hover\:bg-gray-50\/50:hover,
+.hover\:bg-gray-50\/70:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--color-surface-muted) 60%,
+    transparent
+  );
+}
+
+/* ==========================================================================
+   Toast notifications (Sonner)
+   Warm surfaces with strong, readable text for every toast type.
+   ========================================================================== */
+body [data-sonner-toaster][data-sonner-theme] {
+  --normal-bg: var(--color-surface);
+  --normal-border: var(--color-border-strong);
+  --normal-text: var(--color-ink);
+  --success-bg: #eef4ee;
+  --success-border: #c3d7c8;
+  --success-text: #2f4a38;
+  --info-bg: #edf2ef;
+  --info-border: #cbd9d0;
+  --info-text: #35483c;
+  --warning-bg: #fbf3e7;
+  --warning-border: #e9d5b8;
+  --warning-text: #76501f;
+  --error-bg: #fbeeee;
+  --error-border: #e8caca;
+  --error-text: #7a3434;
+  --border-radius: 14px;
+  font-family: "Inter", sans-serif;
+}
+
+body [data-sonner-toast][data-styled="true"] {
+  padding: 14px 16px;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-left: 4px solid var(--color-primary);
+  color: var(--color-ink);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(44, 43, 40, 0.16);
+}
+
+body [data-sonner-toast][data-styled="true"][data-type="success"] {
+  background: #eef4ee;
+  border-color: #c3d7c8;
+  border-left-color: var(--color-success);
+  color: #2f4a38;
+}
+
+body [data-sonner-toast][data-styled="true"][data-type="error"] {
+  background: #fbeeee;
+  border-color: #e8caca;
+  border-left-color: var(--color-danger);
+  color: #7a3434;
+}
+
+body [data-sonner-toast][data-styled="true"][data-type="warning"] {
+  background: #fbf3e7;
+  border-color: #e9d5b8;
+  border-left-color: var(--color-accent);
+  color: #76501f;
+}
+
+body [data-sonner-toast][data-styled="true"][data-type="info"] {
+  background: #edf2ef;
+  border-color: #cbd9d0;
+  border-left-color: var(--color-primary);
+  color: #35483c;
+}
+
+body [data-sonner-toast][data-styled="true"][data-type="loading"] {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  border-left-color: var(--color-primary);
+  color: var(--color-ink);
+}
+
+body [data-sonner-toast][data-styled="true"] [data-title] {
+  color: inherit;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+body [data-sonner-toast][data-styled="true"] [data-description] {
+  color: inherit;
+  opacity: 0.8;
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+body [data-sonner-toast][data-styled="true"] [data-close-button] {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+body [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
+  background: var(--color-surface-muted);
+  border-color: var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+.divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-border);
+}
+
+.divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-border);
 }

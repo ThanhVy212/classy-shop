@@ -12,6 +12,8 @@ import {
 import Button from "../Common/Button.tsx";
 import { toast } from "sonner";
 import { productService } from "../../services/productService.ts";
+import { catalogService } from "../../services/catalogService.ts";
+import type { CatalogItem } from "../../types/catalog.ts";
 
 interface AdminProductItem {
   id: string;
@@ -26,6 +28,7 @@ interface AdminProductItem {
 
 const ProductManagement = () => {
   const [products, setProducts] = useState<AdminProductItem[]>([]);
+  const [categories, setCategories] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -48,7 +51,7 @@ const ProductManagement = () => {
           image:
             p.images?.[0]?.url ||
             p.image ||
-            "https://picsum.photos/200",
+            "",
         }));
         setProducts(mapped);
       }
@@ -61,6 +64,10 @@ const ProductManagement = () => {
 
   useEffect(() => {
     loadProducts();
+    catalogService
+      .getItems("category")
+      .then(setCategories)
+      .catch((error) => console.warn("Could not load categories:", error));
   }, []);
 
   const filteredProducts = products.filter((prod) => {
@@ -139,10 +146,11 @@ const ProductManagement = () => {
               className="admin-filter-select"
             >
               <option value="all">All Categories</option>
-              <option value="Top Wear">Top Wear</option>
-              <option value="Bottom Wear">Bottom Wear</option>
-              <option value="Outerwear">Outerwear</option>
-              <option value="Dresses">Dresses</option>
+              {categories.map((category) => (
+                <option key={category._id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -195,11 +203,17 @@ const ProductManagement = () => {
                     <tr key={prod.id} className="table-row-hover">
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={prod.image}
-                            alt={prod.name}
-                            className="w-12 h-14 object-cover rounded-xl border border-gray-200 shrink-0"
-                          />
+                          {prod.image ? (
+                            <img
+                              src={prod.image}
+                              alt={prod.name}
+                              className="w-12 h-14 object-cover rounded-xl border border-gray-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-14 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center shrink-0">
+                              <Package className="w-5 h-5 text-gray-300" />
+                            </div>
+                          )}
                           <div>
                             <p className="font-semibold text-gray-900 line-clamp-1">
                               {prod.name}

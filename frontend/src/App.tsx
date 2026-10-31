@@ -11,11 +11,13 @@ import Register from "./pages/Register.tsx";
 import Profile from "./pages/Profile.tsx";
 import Collection from "./pages/Collection.tsx";
 import ProductDetails from "./components/Products/ProductDetails.tsx";
+import Cart from "./pages/Cart.tsx";
 import Checkout from "./components/Cart/Checkout.tsx";
 import OrderDetails from "./pages/OrderDetails.tsx";
 import AdminDashboard from "./components/Admin/AdminDashboard.tsx";
 import ProductManagement from "./components/Admin/ProductManagement.tsx";
 import EditProduct from "./components/Admin/EditProduct.tsx";
+import CatalogManagement from "./components/Admin/CatalogManagement.tsx";
 import OrderManagement from "./components/Admin/OrderManagement.tsx";
 import UserManagement from "./components/Admin/UserManagement.tsx";
 
@@ -70,6 +72,7 @@ const App = () => {
                             <Route path="/profile" element={<Profile />}/>
                             <Route path="/collections/:collection" element={<Collection />}/>
                             <Route path="/products/:id" element={<ProductDetails />}/>
+                            <Route path="/cart" element={<Cart />}/>
                             <Route path="/checkout" element={<Checkout />}/>
                             <Route path="/order/:id" element={<OrderDetails />}/>
                         </Route>
@@ -78,6 +81,7 @@ const App = () => {
                             <Route path="products" element={<ProductManagement />} />
                             <Route path="products/new" element={<EditProduct />} />
                             <Route path="products/:id/edit" element={<EditProduct />} />
+                            <Route path="catalog" element={<CatalogManagement />} />
                             <Route path="orders" element={<OrderManagement />} />
                             <Route path="users" element={<UserManagement />} />
                         </Route>

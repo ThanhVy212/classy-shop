@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import Button from "../Common/Button.tsx";
 import ProductGrid from "./ProductGrid.tsx";
@@ -45,9 +45,7 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
         if (isMounted && loadedProduct) {
           setProduct(loadedProduct);
           const firstImg =
-            loadedProduct.images?.[0]?.url ||
-            loadedProduct.image ||
-            "https://picsum.photos/500/500";
+            loadedProduct.images?.[0]?.url || loadedProduct.image || "";
           setMainImage(firstImg);
           if (loadedProduct.sizes?.length) {
             setSelectedSize(loadedProduct.sizes[0]);
@@ -132,9 +130,9 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg flex justify-center items-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-black" />
+      <div className="bg-[var(--color-canvas)] p-4 sm:p-6">
+        <div className="mx-auto flex min-h-[400px] max-w-6xl items-center justify-center rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
         </div>
       </div>
     );
@@ -142,12 +140,20 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
 
   if (!product) {
     return (
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg text-center py-16">
-          <h2 className="text-2xl font-bold mb-2">Product Not Found</h2>
-          <p className="text-gray-500">
-            The product you are looking for does not exist.
+      <div className="bg-[var(--color-canvas)] p-4 sm:p-6">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-16 text-center">
+          <h2 className="mb-2 text-2xl font-semibold text-[var(--color-ink)]">
+            Product not found
+          </h2>
+          <p className="text-sm text-[var(--color-ink-soft)]">
+            The piece you are looking for is no longer available.
           </p>
+          <Link
+            to="/collections/all"
+            className="checkout-primary-button mx-auto mt-6 max-w-xs"
+          >
+            Browse the collection
+          </Link>
         </div>
       </div>
     );
@@ -158,7 +164,7 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
       ? product.images
       : product.image
         ? [{ url: product.image, altText: product.name }]
-        : [{ url: "https://picsum.photos/500/500", altText: product.name }];
+        : [];
 
   const hasDiscount =
     product.discountPrice !== undefined &&
@@ -166,8 +172,8 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
     product.discountPrice < product.price;
 
   return (
-    <div className="p-6">
-      <div className="max-w-6xl mx-auto bg-white p-8 rounded-lg">
+    <div className="bg-[var(--color-canvas)] px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-6xl rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xs sm:p-8 lg:p-10">
         <div className="flex flex-col md:flex-row">
           {/* Left Thumb */}
           <div className="hidden md:flex flex-col space-y-4 mr-6">
@@ -176,10 +182,10 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                 key={image._id || index}
                 src={image.url}
                 alt={image?.altText || `Thumbnail ${index + 1}`}
-                className={`w-20 h-20 object-cover rounded-lg cursor-pointer border transition-all duration-300 ease-in-out ${
+                className={`w-20 h-20 object-cover rounded-xl cursor-pointer border-2 transition-all duration-300 ease-in-out ${
                   mainImage === image.url
-                    ? "scale-105 border-black ring-1 ring-black"
-                    : "scale-100 border-gray-200 hover:border-gray-400"
+                    ? "scale-110 ring-offset-[var(--color-surface)]"
+                    : "scale-100 border-[var(--color-border)] hover:border-[var(--color-primary)]"
                 }`}
                 onClick={() => setMainImage(image.url)}
               />
@@ -211,10 +217,10 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                 key={image._id || index}
                 src={image.url}
                 alt={image?.altText || `Thumbnail ${index + 1}`}
-                className={`w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer border transition-all duration-300 ease-in-out ${
+                className={`w-20 h-20 shrink-0 object-cover rounded-xl cursor-pointer border-2 transition-all duration-300 ease-in-out ${
                   mainImage === image.url
-                    ? "scale-105 border-black ring-1 ring-black"
-                    : "scale-100 border-gray-200"
+                    ? "scale-105 border-[var(--color-primary)] ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)]"
+                    : "scale-100 border-[var(--color-border)]"
                 }`}
                 onClick={() => setMainImage(image.url)}
               />
@@ -223,31 +229,31 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
 
           {/* Right Side */}
           <div className="md:w-1/2 md:ml-10">
-            <h1 className="text-2xl md:text-3xl font-semibold mb-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)] md:text-3xl">
               {product.name}
             </h1>
 
-            <div className="flex items-center gap-3 mb-2">
-              <p className="text-2xl font-bold text-gray-900">
+            <div className="flex items-center gap-3 mb-2 mt-2">
+              <p className="text-2xl font-semibold text-[var(--color-ink)]">
                 ${hasDiscount ? product.discountPrice : product.price}
               </p>
               {hasDiscount && (
-                <p className="text-lg text-gray-400 line-through">
+                <p className="text-lg text-[var(--color-ink-muted)] line-through">
                   ${product.price}
                 </p>
               )}
             </div>
 
-            <p className="text-gray-600 mb-6 leading-relaxed">
+            <p className="mb-6 leading-relaxed text-[var(--color-ink-soft)]">
               {product.description}
             </p>
 
             {/* Colors */}
             {product.colors && product.colors.length > 0 && (
               <div className="mb-4">
-                <p className="text-gray-700 font-medium">
+                <p className="font-medium text-[var(--color-ink-soft)]">
                   Color:{" "}
-                  <span className="font-semibold text-black">
+                  <span className="font-semibold text-[var(--color-ink)]">
                     {selectedColor}
                   </span>
                 </p>
@@ -257,9 +263,9 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                       key={color}
                       onClick={() => setSelectedColor(color)}
                       aria-label={`Select color ${color}`}
-                      className={`w-8 h-8 rounded-full border border-gray-300 transition-all duration-200 ease-in-out cursor-pointer ${
+                      className={`w-8 h-8 rounded-full border border-[var(--color-border-strong)] transition-all duration-200 ease-in-out cursor-pointer ${
                         selectedColor === color
-                          ? "ring-2 ring-black ring-offset-2 scale-105"
+                          ? "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-105"
                           : "hover:scale-105"
                       }`}
                       style={getColorStyle(color)}
@@ -272,9 +278,9 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
             {/* Sizes */}
             {product.sizes && product.sizes.length > 0 && (
               <div className="mt-4 mb-4">
-                <p className="text-gray-700 font-medium">
+                <p className="font-medium text-[var(--color-ink-soft)]">
                   Size:{" "}
-                  <span className="font-semibold text-black">
+                  <span className="font-semibold text-[var(--color-ink)]">
                     {selectedSize}
                   </span>
                 </p>
@@ -283,10 +289,10 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                     <Button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 rounded-lg border font-medium text-sm transition-all duration-200 cursor-pointer ${
+                      className={`min-w-[3rem] px-4 py-2 rounded-xl border font-medium text-sm transition-all duration-200 cursor-pointer ${
                         selectedSize === size
-                          ? "bg-black text-white border-black shadow scale-110"
-                          : "bg-white text-gray-800 border-gray-300 hover:border-black"
+                          ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm scale-105"
+                          : "bg-transparent text-[var(--color-ink)] border-[var(--color-border-strong)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)]"
                       }`}>
                       {size}
                     </Button>
@@ -297,7 +303,7 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
 
             {/* Quantity */}
             <div className="mb-6">
-              <p className="text-gray-700 font-medium mb-2">Quantity:</p>
+              <p className="font-medium text-[var(--color-ink-soft)] mb-2">Quantity:</p>
               <div className="flex items-center space-x-4">
                 <Button
                   onClick={() => handleQuantityChange("minus")}
@@ -305,7 +311,7 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                   aria-label="Decrease quantity">
                   -
                 </Button>
-                <span className="text-lg font-semibold w-8 text-center">
+                <span className="text-lg font-semibold w-8 text-center text-[var(--color-ink)]">
                   {quantity}
                 </span>
                 <Button
@@ -320,32 +326,32 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
             <Button
               onClick={handleAddToCart}
               disabled={isAddingToCart}
-              className={`btn-black py-3 px-6 rounded-lg w-full mb-4 font-semibold text-base transition-all ${
+              className={`btn-black py-3.5 px-6 rounded-2xl w-full mb-4 font-semibold text-sm tracking-wide uppercase transition-all ${
                 isAddingToCart
                   ? "opacity-60 cursor-not-allowed"
                   : "cursor-pointer"
               }`}>
-              {isAddingToCart ? "ADDING TO CART..." : "ADD TO CART"}
+              {isAddingToCart ? "Adding to cart..." : "Add to cart"}
             </Button>
 
             {/* Characteristics */}
             {(product.brand || product.material) && (
-              <div className="mt-8 pt-6 border-t border-gray-200 text-gray-700">
-                <h3 className="text-lg font-bold mb-3">Characteristics:</h3>
-                <table className="w-full text-left text-sm text-gray-600">
+              <div className="mt-8 pt-6 border-t border-[var(--color-border)] text-[var(--color-ink-soft)]">
+                <h3 className="mb-3 text-lg font-semibold text-[var(--color-ink)]">Characteristics</h3>
+                <table className="w-full text-left text-sm">
                   <tbody>
                     {product.brand && (
                       <tr>
-                        <td className="py-1.5 text-gray-500 w-32">Brand:</td>
-                        <td className="py-1.5 font-semibold text-gray-800">
+                        <td className="py-1.5 text-[var(--color-ink-soft)] w-32">Brand:</td>
+                        <td className="py-1.5 font-semibold text-[var(--color-ink)]">
                           {product.brand}
                         </td>
                       </tr>
                     )}
                     {product.material && (
                       <tr>
-                        <td className="py-1.5 text-gray-500 w-32">Material:</td>
-                        <td className="py-1.5 font-semibold text-gray-800">
+                        <td className="py-1.5 text-[var(--color-ink-soft)] w-32">Material:</td>
+                        <td className="py-1.5 font-semibold text-[var(--color-ink)]">
                           {product.material}
                         </td>
                       </tr>
@@ -359,9 +365,9 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
 
         {/* Similar Products */}
         {similarProducts.length > 0 && (
-          <div className="mt-20">
-            <h2 className="text-2xl text-center font-bold mb-6">
-              You May Also Like
+          <div className="mt-20 border-t border-[var(--color-border)] pt-10">
+            <h2 className="mb-8 text-center text-2xl font-semibold tracking-tight text-[var(--color-ink)]">
+              You may also like
             </h2>
             <ProductGrid products={similarProducts} />
           </div>

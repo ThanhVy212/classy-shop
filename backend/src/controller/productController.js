@@ -1,6 +1,116 @@
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
 import { validateObjectId } from "../middlewares/validate.js";
+import { ensureCatalogItems } from "../services/catalogService.js";
+
+const syncProductCatalog = async (product) => {
+  try {
+    await ensureCatalogItems([
+      { type: "category", name: product.category },
+      { type: "brand", name: product.brand },
+      { type: "material", name: product.material },
+    ]);
+  } catch (error) {
+    console.error("Could not sync product values to catalog:", error);
+  }
+};
+
+const DEFAULT_SIMILAR_LIMIT = 8;
+const MAX_SIMILAR_LIMIT = 12;
+const MAX_SIMILAR_CANDIDATES = 300;
+
+const normalizeCatalogValue = (value) =>
+  String(value ?? "").trim().toLowerCase();
+
+const valuesMatch = (first, second) => {
+  const normalizedFirst = normalizeCatalogValue(first);
+  const normalizedSecond = normalizeCatalogValue(second);
+
+  return Boolean(
+    normalizedFirst &&
+      normalizedSecond &&
+      normalizedFirst === normalizedSecond,
+  );
+};
+
+const countOverlap = (first = [], second = []) => {
+  const secondValues = new Set(
+    (Array.isArray(second) ? second : [])
+      .map(normalizeCatalogValue)
+      .filter(Boolean),
+  );
+
+  return (Array.isArray(first) ? first : []).reduce((count, value) => {
+    return secondValues.has(normalizeCatalogValue(value)) ? count + 1 : count;
+  }, 0);
+};
+
+const getComparablePrice = (product) => {
+  const discountPrice = Number(product.discountPrice);
+
+  if (Number.isFinite(discountPrice) && discountPrice > 0) {
+    return discountPrice;
+  }
+
+  const price = Number(product.price);
+  return Number.isFinite(price) && price > 0 ? price : 0;
+};
+
+const getPriceSimilarityScore = (source, candidate) => {
+  const sourcePrice = getComparablePrice(source);
+  const candidatePrice = getComparablePrice(candidate);
+
+  if (!sourcePrice || !candidatePrice) return 0;
+
+  const highestPrice = Math.max(sourcePrice, candidatePrice);
+  const differenceRatio = Math.abs(sourcePrice - candidatePrice) / highestPrice;
+
+  // Closer prices get up to 12 points.
+  return Math.max(0, 1 - differenceRatio) * 12;
+};
+
+const getRecencyScore = (createdAt) => {
+  if (!createdAt) return 0;
+
+  const ageInDays = (Date.now() - new Date(createdAt).getTime()) / 86_400_000;
+
+  if (!Number.isFinite(ageInDays) || ageInDays < 0) return 0;
+  if (ageInDays <= 7) return 4;
+  if (ageInDays <= 30) return 3;
+  if (ageInDays <= 90) return 2;
+  if (ageInDays <= 365) return 1;
+
+  return 0;
+};
+
+/**
+ * Score a candidate using catalog-backed attributes (category, brand,
+ * material) plus other relevance signals. A higher score means the product is
+ * more relevant to the product currently being viewed.
+ */
+const scoreCatalogSimilarity = (source, candidate) => {
+  let score = 0;
+
+  if (valuesMatch(source.category, candidate.category)) score += 40;
+  if (valuesMatch(source.brand, candidate.brand)) score += 18;
+  if (valuesMatch(source.material, candidate.material)) score += 16;
+  if (valuesMatch(source.gender, candidate.gender)) score += 14;
+  if (valuesMatch(source.collections, candidate.collections)) score += 10;
+
+  score += Math.min(countOverlap(source.tags, candidate.tags) * 4, 12);
+  score += Math.min(countOverlap(source.colors, candidate.colors) * 1.5, 6);
+  score += Math.min(countOverlap(source.sizes, candidate.sizes), 4);
+  score += getPriceSimilarityScore(source, candidate);
+
+  const rating = Number(candidate.rating);
+  if (Number.isFinite(rating)) {
+    score += Math.max(0, Math.min(rating, 5)) * 0.8;
+  }
+
+  score += getRecencyScore(candidate.createdAt);
+
+  return score;
+};
 
 export const createProduct = async (req, res) => {
   try {
@@ -50,6 +160,7 @@ export const createProduct = async (req, res) => {
     });
 
     const createdProduct = await product.save();
+    await syncProductCatalog(createdProduct);
     res.status(201).json(createdProduct);
   } catch (e) {
     console.error(e);
@@ -114,6 +225,7 @@ export const updateProduct = async (req, res) => {
 
     // Save updated product
     const updatedProduct = await product.save();
+    await syncProductCatalog(updatedProduct);
 
     return res.status(200).json({
       message: "Product updated successfully",
@@ -365,71 +477,108 @@ export const getSimilarProductById = async (req, res) => {
       });
     }
 
-    const LIMIT = 4;
-    const existingIds = [product._id];
-    let similarProducts = [];
+    const requestedLimit = Number(req.query.limit);
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(
+          MAX_SIMILAR_LIMIT,
+          Math.max(4, Math.floor(requestedLimit)),
+        )
+      : DEFAULT_SIMILAR_LIMIT;
 
-    // Case-insensitive regex for category matching
-    const categoryRegex = product.category
-      ? new RegExp(`^${product.category.trim()}$`, "i")
-      : null;
+    // Score a wide pool instead of taking the first products from one
+    // category only. This lets newer and complementary products participate.
+    const candidates = await Product.find({
+      _id: { $ne: product._id },
+      isPublished: { $ne: false },
+    })
+      .sort({ createdAt: -1 })
+      .limit(MAX_SIMILAR_CANDIDATES)
+      .lean();
 
-    // Step 1: Find products with BOTH the same category and same gender (highest relevance)
-    if (categoryRegex && product.gender) {
-      const sameCategoryAndGender = await Product.find({
-        _id: { $nin: existingIds },
-        category: { $regex: categoryRegex },
-        gender: product.gender,
-      })
-        .limit(LIMIT)
-        .lean();
+    const rankedCandidates = candidates
+      .map((candidate) => ({
+        product: candidate,
+        score: scoreCatalogSimilarity(product, candidate),
+      }))
+      .sort((first, second) => {
+        if (second.score !== first.score) {
+          return second.score - first.score;
+        }
 
-      similarProducts = [...sameCategoryAndGender];
-      similarProducts.forEach((p) => existingIds.push(p._id));
+        return (
+          new Date(second.product.createdAt || 0).getTime() -
+          new Date(first.product.createdAt || 0).getTime()
+        );
+      });
+
+    /*
+     * Diversity selection:
+     * - In the first pass, cap how many products may come from the same
+     *   category or brand (half of the requested limit).
+     * - The second pass fills any remaining slots by score, so the response is
+     *   still full when a catalog has few values.
+     *
+     * Example: limit 8 + 5 products sharing a category => up to 4 products
+     * from that category, then 4 more relevant products from other categories.
+     */
+    const perCategoryCap = Math.max(2, Math.ceil(limit / 2));
+    const perBrandCap = Math.max(2, Math.ceil(limit / 2));
+    const selectedIds = new Set([String(product._id)]);
+    const categoryCounts = new Map();
+    const brandCounts = new Map();
+    const selectedCandidates = [];
+
+    const addCandidate = (candidate, enforceDiversity) => {
+      if (
+        selectedCandidates.length >= limit ||
+        selectedIds.has(String(candidate._id))
+      ) {
+        return false;
+      }
+
+      const categoryKey = normalizeCatalogValue(candidate.category);
+      const brandKey = normalizeCatalogValue(candidate.brand);
+      const categoryCount = categoryKey
+        ? categoryCounts.get(categoryKey) || 0
+        : 0;
+      const brandCount = brandKey ? brandCounts.get(brandKey) || 0 : 0;
+
+      if (
+        enforceDiversity &&
+        ((categoryKey && categoryCount >= perCategoryCap) ||
+          (brandKey && brandCount >= perBrandCap))
+      ) {
+        return false;
+      }
+
+      selectedCandidates.push(candidate);
+      selectedIds.add(String(candidate._id));
+
+      if (categoryKey) {
+        categoryCounts.set(categoryKey, categoryCount + 1);
+      }
+      if (brandKey) {
+        brandCounts.set(brandKey, brandCount + 1);
+      }
+
+      return true;
+    };
+
+    // First pass: relevant + diverse.
+    for (const entry of rankedCandidates) {
+      if (selectedCandidates.length >= limit) break;
+      addCandidate(entry.product, true);
     }
 
-    // Step 2: If not enough, find more products in the same category (any gender)
-    if (similarProducts.length < LIMIT && categoryRegex) {
-      const remaining = LIMIT - similarProducts.length;
-
-      const sameCategory = await Product.find({
-        _id: { $nin: existingIds },
-        category: { $regex: categoryRegex },
-      })
-        .limit(remaining)
-        .lean();
-
-      similarProducts = [...similarProducts, ...sameCategory];
-      sameCategory.forEach((p) => existingIds.push(p._id));
+    // Second pass: fill remaining slots if the catalog is small.
+    if (selectedCandidates.length < limit) {
+      for (const entry of rankedCandidates) {
+        if (selectedCandidates.length >= limit) break;
+        addCandidate(entry.product, false);
+      }
     }
 
-    // Step 3: If still not enough, find more products with the same gender
-    if (similarProducts.length < LIMIT && product.gender) {
-      const remaining = LIMIT - similarProducts.length;
-
-      const sameGender = await Product.find({
-        _id: { $nin: existingIds },
-        gender: product.gender,
-      })
-        .limit(remaining)
-        .lean();
-
-      similarProducts = [...similarProducts, ...sameGender];
-      sameGender.forEach((p) => existingIds.push(p._id));
-    }
-
-    // Step 4: Fallback to other products to ensure LIMIT is filled
-    if (similarProducts.length < LIMIT) {
-      const remaining = LIMIT - similarProducts.length;
-
-      const fallback = await Product.find({
-        _id: { $nin: existingIds },
-      })
-        .limit(remaining)
-        .lean();
-
-      similarProducts = [...similarProducts, ...fallback];
-    }
+    const similarProducts = selectedCandidates;
 
     return res.status(200).json({
       message: "Similar products retrieved successfully",
