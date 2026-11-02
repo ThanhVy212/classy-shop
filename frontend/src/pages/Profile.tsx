@@ -1,10 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MyOrders from "./MyOrders.tsx";
 import { useAuth } from "../hooks/useAuth.ts";
 import { toast } from "sonner";
 
 const Profile = () => {
-    const { user, logout, isAuthenticated } = useAuth();
+    const { user, logout, isAuthenticated, isAdmin } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -29,6 +29,14 @@ const Profile = () => {
                         <p className="text-lg text-gray-600 mb-6">
                             {user?.email || "No email available"}
                         </p>
+                        {isAdmin && (
+                            <Link
+                                to="/admin"
+                                className="mb-3 block w-full rounded bg-gray-950 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                            >
+                                Open Admin Panel
+                            </Link>
+                        )}
                         {isAuthenticated ? (
                             <button
                                 onClick={handleLogout}

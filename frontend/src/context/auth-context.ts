@@ -6,6 +6,7 @@ export interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   login: (data: LoginFormData) => Promise<AuthResponse>;
   register: (data: RegisterFormData) => Promise<AuthResponse>;

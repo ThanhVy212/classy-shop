@@ -102,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         token,
         isAuthenticated: !!user && !!token,
+        isAdmin: user?.role === "admin",
         isLoading,
         login,
         register,

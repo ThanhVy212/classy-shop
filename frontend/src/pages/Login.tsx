@@ -10,19 +10,35 @@ import logo from "../assets/logo.svg";
 import loginPlaceholder from "../assets/login.webp";
 import OAutGoogle from "../components/Common/OAuth.tsx";
 import { loginSchema, type LoginFormData } from "../validations/auth.ts";
+import type { UserRole } from "../types/auth.ts";
 import { useAuth } from "../hooks/useAuth.ts";
 import { getApiErrorMessage } from "../services/authService.ts";
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, isAuthenticated } = useAuth();
+    const { login, isAuthenticated, user } = useAuth();
     const [serverError, setServerError] = useState<string | null>(null);
 
     const searchParams = new URLSearchParams(location.search);
     const redirectParam = searchParams.get("redirect");
     const redirectPath = redirectParam ? (redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`) : null;
-    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || redirectPath || "/";
+    const stateFrom = (location.state as { from?: { pathname: string } })?.from?.pathname;
+    const explicitPath = stateFrom || redirectPath || null;
+
+    // Admins land in the admin panel by default, while customers land in the
+    // storefront. A customer must never be sent to an admin-only destination.
+    const resolveDestination = (role?: UserRole) => {
+        if (explicitPath?.startsWith("/admin") && role !== "admin") {
+            return "/";
+        }
+        if (explicitPath) {
+            return explicitPath;
+        }
+        return role === "admin" ? "/admin" : "/";
+    };
+
+    const from = resolveDestination(user?.role);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -47,7 +63,7 @@ const Login = () => {
             setServerError(null);
             const res = await login(data);
             toast.success(res.message || "Login successful!");
-            navigate(from, { replace: true });
+            navigate(resolveDestination(res.user?.role), { replace: true });
         } catch (error) {
             const message = getApiErrorMessage(error, "Failed to login. Please try again.");
             setServerError(message);
