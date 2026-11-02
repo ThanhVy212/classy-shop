@@ -23,16 +23,19 @@ export const checkoutSchema = z.object({
 
   firstName: z
     .string()
+    .trim()
     .min(1, "First name is required")
     .max(50, "First name must not exceed 50 characters"),
 
   lastName: z
     .string()
+    .trim()
     .min(1, "Last name is required")
     .max(50, "Last name must not exceed 50 characters"),
 
   address: z
     .string()
+    .trim()
     .min(1, "Street address is required")
     .max(120, "Street address must not exceed 120 characters"),
 
@@ -42,6 +45,7 @@ export const checkoutSchema = z.object({
 
   city: z
     .string()
+    .trim()
     .min(1, "City is required")
     .max(60, "City must not exceed 60 characters"),
 
@@ -58,7 +62,10 @@ export const checkoutSchema = z.object({
   phone: z
     .string()
     .min(1, "Phone number is required")
-    .regex(/^\+?[0-9\s().-]{7,20}$/, "Please enter a valid phone number"),
+    .regex(
+      /^\+?(?=(?:\D*\d){7,15}\D*$)[0-9\s().-]{7,20}$/,
+      "Please enter a valid phone number"
+    ),
 
   saveInfo: z.boolean(),
 

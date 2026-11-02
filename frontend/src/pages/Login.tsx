@@ -25,6 +25,7 @@ const Login = () => {
     const redirectPath = redirectParam ? (redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`) : null;
     const stateFrom = (location.state as { from?: { pathname: string } })?.from?.pathname;
     const explicitPath = stateFrom || redirectPath || null;
+    const oauthError = searchParams.get("oauth") === "error";
 
     // Admins land in the admin panel by default, while customers land in the
     // storefront. A customer must never be sent to an admin-only destination.
@@ -45,6 +46,12 @@ const Login = () => {
             navigate(from, { replace: true });
         }
     }, [isAuthenticated, from, navigate]);
+
+    useEffect(() => {
+        if (oauthError) {
+            setServerError("Google sign-in was cancelled or failed. Please try again.");
+        }
+    }, [oauthError]);
 
     const {
         register,

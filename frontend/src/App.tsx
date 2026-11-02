@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext.tsx";
 import { CartProvider } from "./context/CartContext.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
+import OAuthCallback from "./pages/OAuthCallback.tsx";
 import Profile from "./pages/Profile.tsx";
 import Collection from "./pages/Collection.tsx";
 import ProductDetails from "./components/Products/ProductDetails.tsx";
@@ -70,6 +71,7 @@ const App = () => {
                             <Route index element={<Home />} />
                             <Route path="/login" element={<Login />}/>
                             <Route path="/register" element={<Register />}/>
+                            <Route path="/oauth/callback" element={<OAuthCallback />}/>
                             <Route path="/profile" element={
                                 <ProtectedRoute>
                                     <Profile />

@@ -1,6 +1,8 @@
 import express from "express";
 import {
   getProfile,
+  googleAuth,
+  googleCallback,
   login,
   logout,
   refreshToken,
@@ -9,6 +11,9 @@ import {
 import { protectedRoute } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
+
+router.get("/google", googleAuth);
+router.get("/callback/google", googleCallback);
 
 router.post("/register", register);
 router.post("/login", login);
