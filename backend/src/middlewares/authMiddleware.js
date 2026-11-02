@@ -7,8 +7,9 @@ export const protectedRoute = async (req, res, next) => {
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
 
+    // Never reveal whether a protected endpoint exists or what is missing.
     if (!token) {
-      return res.status(401).json({ message: "Access token not found" });
+      return res.status(401).end();
     }
 
     jwt.verify(
@@ -17,9 +18,7 @@ export const protectedRoute = async (req, res, next) => {
       async (err, decodedUser) => {
         if (err) {
           console.log(err);
-          return res
-            .status(403)
-            .json({ message: "Access token is invalid or expired" });
+          return res.status(401).end();
         }
 
         const user = await User.findById(decodedUser.userId).select(
@@ -27,7 +26,7 @@ export const protectedRoute = async (req, res, next) => {
         );
 
         if (!user) {
-          return res.status(404).json({ message: "User doest not exist" });
+          return res.status(401).end();
         }
 
         req.user = user;
@@ -36,17 +35,19 @@ export const protectedRoute = async (req, res, next) => {
     );
   } catch (e) {
     console.error("JWT verification error in authMiddleware", e);
-    return res.status(500).json({ message: "Failed to protectedRoute" });
+    return res.status(500).end();
   }
 };
 
-// Middleware to check if the user is an admin
+// Middleware to check if the authenticated user is an admin.
+// Must be used after protectedRoute. Returns 404 without a body so callers
+// cannot discover which admin-only endpoints exist.
 export const isAdmin = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
-    next();
-  } else {
-    res.status(403).json({ message: "Not authorized as an admin" });
+    return next();
   }
+
+  return res.status(404).end();
 };
 
 // Optional authentication middleware (for guest or logged in user)
@@ -66,9 +67,7 @@ export const optionalAuth = async (req, res, next) => {
       async (err, decodedUser) => {
         if (err) {
           console.log(err);
-          return res
-            .status(403)
-            .json({ message: "Access token is invalid or expired" });
+          return res.status(401).end();
         }
 
         const user = await User.findById(decodedUser.userId).select(
@@ -76,7 +75,7 @@ export const optionalAuth = async (req, res, next) => {
         );
 
         if (!user) {
-          return res.status(404).json({ message: "User does not exist" });
+          return res.status(401).end();
         }
 
         req.user = user;
@@ -85,6 +84,6 @@ export const optionalAuth = async (req, res, next) => {
     );
   } catch (e) {
     console.error("JWT verification error in optionalAuth", e);
-    return res.status(500).json({ message: "Failed to authenticate" });
+    return res.status(500).end();
   }
 };

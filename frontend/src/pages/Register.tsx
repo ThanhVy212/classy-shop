@@ -10,19 +10,33 @@ import Button from "../components/Common/Button.tsx";
 import registerPlaceholder from "../assets/register.webp";
 import OAutGoogle from "../components/Common/OAuth.tsx";
 import { registerSchema, type RegisterFormData } from "../validations/auth.ts";
+import type { UserRole } from "../types/auth.ts";
 import { useAuth } from "../hooks/useAuth.ts";
 import { getApiErrorMessage } from "../services/authService.ts";
 
 const Register = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { register: registerAuth, isAuthenticated } = useAuth();
+    const { register: registerAuth, isAuthenticated, user } = useAuth();
     const [serverError, setServerError] = useState<string | null>(null);
 
     const searchParams = new URLSearchParams(location.search);
     const redirectParam = searchParams.get("redirect");
     const redirectPath = redirectParam ? (redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`) : null;
-    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || redirectPath || "/";
+    const stateFrom = (location.state as { from?: { pathname: string } })?.from?.pathname;
+    const explicitPath = stateFrom || redirectPath || null;
+
+    const resolveDestination = (role?: UserRole) => {
+        if (explicitPath?.startsWith("/admin") && role !== "admin") {
+            return "/";
+        }
+        if (explicitPath) {
+            return explicitPath;
+        }
+        return role === "admin" ? "/admin" : "/";
+    };
+
+    const from = resolveDestination(user?.role);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -48,7 +62,7 @@ const Register = () => {
             setServerError(null);
             const res = await registerAuth(data);
             toast.success(res.message || "Registration successful!");
-            navigate(from, { replace: true });
+            navigate(resolveDestination(res.user?.role), { replace: true });
         } catch (error) {
             const message = getApiErrorMessage(error, "Failed to register account. Please try again.");
             setServerError(message);

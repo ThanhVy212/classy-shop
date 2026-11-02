@@ -33,9 +33,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    // Attempt token refresh on 401 or 403 if it's an expired token and not already retrying
+    // Attempt token refresh on 401 (expired access token). A 403 means the
+    // user is authenticated but lacks the required role, so refreshing would
+    // not help and must not be attempted.
     if (
-      (error.response?.status === 401 || error.response?.status === 403) &&
+      error.response?.status === 401 &&
       !originalRequest?._retry &&
       inMemoryToken &&
       !originalRequest?.url?.includes("/auth/login") &&

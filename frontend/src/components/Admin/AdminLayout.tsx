@@ -14,10 +14,21 @@ import {
 } from "lucide-react";
 import logo from "../../assets/logo.svg";
 import { toast } from "sonner";
+import { useAuth } from "../../hooks/useAuth.ts";
 
 const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
+
+    const initials =
+        (user?.name || "")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part.charAt(0).toUpperCase())
+            .join("") || "AD";
 
     const navItems = [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard, end: true },
@@ -27,9 +38,10 @@ const AdminLayout = () => {
         { name: "Users", href: "/admin/users", icon: Users, end: false },
     ];
 
-    const handleLogout = () => {
-        toast.info("Logged out from Admin Panel");
-        navigate("/login");
+    const handleLogout = async () => {
+        await logout();
+        toast.success("Logged out successfully");
+        navigate("/login", { replace: true });
     };
 
     return (
@@ -155,12 +167,24 @@ const AdminLayout = () => {
                         </button>
 
                         <div className="flex items-center gap-2.5 pl-3 border-l border-gray-200">
-                            <div className="w-8 h-8 rounded-full bg-gray-900 text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                                AD
-                            </div>
-                            <div className="hidden md:block text-left">
-                                <p className="text-xs font-bold text-gray-900 leading-tight">Admin Manager</p>
-                                <p className="text-[10px] text-gray-500">Super Administrator</p>
+                            {user?.avatarUrl ? (
+                                <img
+                                    src={user.avatarUrl}
+                                    alt={user.name || "Administrator"}
+                                    className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-gray-900 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                                    {initials}
+                                </div>
+                            )}
+                            <div className="hidden md:block text-left max-w-[180px]">
+                                <p className="text-xs font-bold text-gray-900 leading-tight truncate">
+                                    {user?.name || "Administrator"}
+                                </p>
+                                <p className="text-[10px] text-gray-500 truncate">
+                                    {user?.email || "admin@classyshop.com"}
+                                </p>
                             </div>
                         </div>
                     </div>

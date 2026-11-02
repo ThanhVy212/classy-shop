@@ -1,11 +1,7 @@
-import {
-    useEffect,
-    useRef,
-    useState,
-    type ChangeEvent,
-    type FormEvent,
-} from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
     ArrowLeft,
     ArrowRight,
@@ -28,35 +24,13 @@ import { useCart } from "../../hooks/useCart.ts";
 import { useAuth } from "../../hooks/useAuth.ts";
 import { useSyncedCart } from "../../hooks/useSyncedCart.ts";
 import type { SyncedCartLine } from "../../hooks/useSyncedCart.ts";
+import {
+    checkoutSchema,
+    COUNTRIES,
+    type CheckoutFormData,
+} from "../../validations/checkout.ts";
 import { getColorStyle } from "../../utils/colors.ts";
 import Button from "../Common/Button.tsx";
-
-interface ShippingFormData {
-    email: string;
-    newsletter: boolean;
-    firstName: string;
-    lastName: string;
-    address: string;
-    apartment: string;
-    city: string;
-    postalCode: string;
-    country: string;
-    phone: string;
-    saveInfo: boolean;
-}
-
-const COUNTRIES = [
-    "United States",
-    "Vietnam",
-    "Canada",
-    "United Kingdom",
-    "Australia",
-    "Singapore",
-    "Japan",
-    "South Korea",
-    "France",
-    "Germany",
-];
 
 const PROMO_CODES: Record<string, number> = {
     CLASSY10: 0.1,
@@ -66,9 +40,28 @@ const PROMO_CODES: Record<string, number> = {
 const getItemKey = (productId: string, size: string, color: string) =>
     `${productId}-${size}-${color}`;
 
+const getCheckoutDefaults = (name?: string, email?: string): CheckoutFormData => {
+    const nameParts = (name || "").trim().split(/\s+/).filter(Boolean);
+
+    return {
+        email: email || "",
+        newsletter: true,
+        firstName: nameParts[0] || "",
+        lastName: nameParts.slice(1).join(" "),
+        address: "",
+        apartment: "",
+        city: "",
+        postalCode: "",
+        country: "United States",
+        phone: "",
+        saveInfo: true,
+        shippingMethod: "standard",
+    };
+};
+
 const Checkout = () => {
-    const navigate = useNavigate();
     const {
+        cart,
         refreshCart,
         updateQuantity,
         removeFromCart,
@@ -76,27 +69,21 @@ const Checkout = () => {
     } = useCart();
     const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
-    const [formData, setFormData] = useState<ShippingFormData>(() => {
-        const nameParts = (user?.name || "").trim().split(/\s+/).filter(Boolean);
-
-        return {
-            email: user?.email || "",
-            newsletter: true,
-            firstName: nameParts[0] || "",
-            lastName: nameParts.slice(1).join(" "),
-            address: "",
-            apartment: "",
-            city: "",
-            postalCode: "",
-            country: "United States",
-            phone: "",
-            saveInfo: true,
-        };
+    const {
+        register,
+        control,
+        handleSubmit,
+        getValues,
+        setValue,
+        formState: { errors },
+    } = useForm<CheckoutFormData>({
+        resolver: zodResolver(checkoutSchema),
+        mode: "onTouched",
+        defaultValues: getCheckoutDefaults(user?.name, user?.email),
     });
 
-    const [shippingMethod, setShippingMethod] = useState<"standard" | "express">(
-        "standard"
-    );
+    const shippingMethod = useWatch({ control, name: "shippingMethod" });
+
     const [promoCode, setPromoCode] = useState("");
     const [appliedCode, setAppliedCode] = useState<string | null>(null);
     const [updatingKey, setUpdatingKey] = useState<string | null>(null);
@@ -111,28 +98,15 @@ const Checkout = () => {
     }, [isAuthenticated, refreshCart]);
 
     useEffect(() => {
-        if (!authLoading && !isAuthenticated) {
-            toast.info("Please log in to proceed to checkout", {
-                duration: 2500,
-            });
-            navigate("/login?redirect=checkout", {
-                replace: true,
-                state: { from: { pathname: "/checkout" } },
-            });
-        }
-    }, [isAuthenticated, authLoading, navigate]);
-
-    useEffect(() => {
         if (!user) return;
 
         const nameParts = (user.name || "").trim().split(/\s+/).filter(Boolean);
-        setFormData((prev) => ({
-            ...prev,
-            email: prev.email || user.email || "",
-            firstName: prev.firstName || nameParts[0] || "",
-            lastName: prev.lastName || nameParts.slice(1).join(" ") || "",
-        }));
-    }, [user]);
+        if (!getValues("email")) setValue("email", user.email || "");
+        if (!getValues("firstName")) setValue("firstName", nameParts[0] || "");
+        if (!getValues("lastName")) {
+            setValue("lastName", nameParts.slice(1).join(" "));
+        }
+    }, [user, getValues, setValue]);
 
     // Live cart lines: latest name, image, price and stock from the product API.
     const {
@@ -147,21 +121,6 @@ const Checkout = () => {
     const discount = appliedCode ? subtotal * (PROMO_CODES[appliedCode] || 0) : 0;
     const tax = Math.round(subtotal * 0.08 * 100) / 100;
     const total = Math.max(0, subtotal + shippingCost + tax - discount);
-
-    const handleInputChange = (
-        event: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
-        const target = event.target;
-
-        if (target instanceof HTMLInputElement && target.type === "checkbox") {
-            const { name, checked } = target;
-            setFormData((prev) => ({ ...prev, [name]: checked }));
-            return;
-        }
-
-        const { name, value } = target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
 
     const handleApplyPromo = () => {
         const code = promoCode.trim().toUpperCase();
@@ -230,9 +189,7 @@ const Checkout = () => {
        validates/reports the synced checkout payload — no order is created
        and no charge is made. Wire Stripe/PayPal/COD here later.
        ==================================================================== */
-    const handleSubmit = (event: FormEvent) => {
-        event.preventDefault();
-
+    const onSubmit = (data: CheckoutFormData) => {
         const unavailableItem = checkoutItems.find((item) => !item.inStock);
         if (unavailableItem) {
             toast.error(`${unavailableItem.name} is out of stock`, {
@@ -242,8 +199,8 @@ const Checkout = () => {
         }
 
         console.log("[checkout] Ready for payment integration:", {
-            customer: formData,
-            shippingMethod,
+            customer: data,
+            shippingMethod: data.shippingMethod,
             items: checkoutItems,
             subtotal,
             shippingCost,
@@ -258,7 +215,7 @@ const Checkout = () => {
         });
     };
 
-    if (authLoading || (cartLoading && checkoutItems.length === 0)) {
+    if (authLoading || (!cart && cartLoading)) {
         return (
             <div className="flex min-h-[70vh] items-center justify-center bg-[var(--color-canvas)]">
                 <div className="flex flex-col items-center gap-3">
@@ -342,7 +299,11 @@ const Checkout = () => {
                     </ol>
                 </div>
 
-                <form onSubmit={handleSubmit} className="mt-8 sm:mt-10">
+                <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    noValidate
+                    className="mt-8 sm:mt-10"
+                >
                     <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-10">
                         {/* ================= LEFT: CHECKOUT FORM ================= */}
                         <div className="space-y-6 lg:col-span-7">
@@ -375,22 +336,29 @@ const Checkout = () => {
                                         <input
                                             id="email"
                                             type="email"
-                                            name="email"
-                                            required
+                                            {...register("email")}
                                             autoComplete="email"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
                                             placeholder="you@example.com"
-                                            className="form-input"
+                                            className={`form-input ${
+                                                errors.email
+                                                    ? "border-red-500 focus:ring-red-500"
+                                                    : ""
+                                            }`}
+                                            aria-invalid={
+                                                errors.email ? "true" : "false"
+                                            }
                                         />
+                                        {errors.email && (
+                                            <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                {errors.email.message}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <label className="flex cursor-pointer items-start gap-3 text-sm text-[var(--color-ink-soft)]">
                                         <input
                                             type="checkbox"
-                                            name="newsletter"
-                                            checked={formData.newsletter}
-                                            onChange={handleInputChange}
+                                            {...register("newsletter")}
                                             className="form-checkbox mt-0.5"
                                         />
                                         <span>
@@ -423,11 +391,15 @@ const Checkout = () => {
                                         </label>
                                         <select
                                             id="country"
-                                            name="country"
-                                            required
-                                            value={formData.country}
-                                            onChange={handleInputChange}
-                                            className="form-select"
+                                            {...register("country")}
+                                            className={`form-select ${
+                                                errors.country
+                                                    ? "border-red-500 focus:ring-red-500"
+                                                    : ""
+                                            }`}
+                                            aria-invalid={
+                                                errors.country ? "true" : "false"
+                                            }
                                         >
                                             {COUNTRIES.map((country) => (
                                                 <option
@@ -438,6 +410,11 @@ const Checkout = () => {
                                                 </option>
                                             ))}
                                         </select>
+                                        {errors.country && (
+                                            <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                {errors.country.message}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -451,14 +428,25 @@ const Checkout = () => {
                                             <input
                                                 id="firstName"
                                                 type="text"
-                                                name="firstName"
-                                                required
+                                                {...register("firstName")}
                                                 autoComplete="given-name"
-                                                value={formData.firstName}
-                                                onChange={handleInputChange}
                                                 placeholder="First name"
-                                                className="form-input"
+                                                className={`form-input ${
+                                                    errors.firstName
+                                                        ? "border-red-500 focus:ring-red-500"
+                                                        : ""
+                                                }`}
+                                                aria-invalid={
+                                                    errors.firstName
+                                                        ? "true"
+                                                        : "false"
+                                                }
                                             />
+                                            {errors.firstName && (
+                                                <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                    {errors.firstName.message}
+                                                </p>
+                                            )}
                                         </div>
                                         <div>
                                             <label
@@ -470,14 +458,25 @@ const Checkout = () => {
                                             <input
                                                 id="lastName"
                                                 type="text"
-                                                name="lastName"
-                                                required
+                                                {...register("lastName")}
                                                 autoComplete="family-name"
-                                                value={formData.lastName}
-                                                onChange={handleInputChange}
                                                 placeholder="Last name"
-                                                className="form-input"
+                                                className={`form-input ${
+                                                    errors.lastName
+                                                        ? "border-red-500 focus:ring-red-500"
+                                                        : ""
+                                                }`}
+                                                aria-invalid={
+                                                    errors.lastName
+                                                        ? "true"
+                                                        : "false"
+                                                }
                                             />
+                                            {errors.lastName && (
+                                                <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                    {errors.lastName.message}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
@@ -491,14 +490,23 @@ const Checkout = () => {
                                         <input
                                             id="address"
                                             type="text"
-                                            name="address"
-                                            required
+                                            {...register("address")}
                                             autoComplete="street-address"
-                                            value={formData.address}
-                                            onChange={handleInputChange}
                                             placeholder="Street and house number"
-                                            className="form-input"
+                                            className={`form-input ${
+                                                errors.address
+                                                    ? "border-red-500 focus:ring-red-500"
+                                                    : ""
+                                            }`}
+                                            aria-invalid={
+                                                errors.address ? "true" : "false"
+                                            }
                                         />
+                                        {errors.address && (
+                                            <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                {errors.address.message}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div>
@@ -511,13 +519,25 @@ const Checkout = () => {
                                         <input
                                             id="apartment"
                                             type="text"
-                                            name="apartment"
+                                            {...register("apartment")}
                                             autoComplete="address-line2"
-                                            value={formData.apartment}
-                                            onChange={handleInputChange}
                                             placeholder="Apt, floor, building"
-                                            className="form-input"
+                                            className={`form-input ${
+                                                errors.apartment
+                                                    ? "border-red-500 focus:ring-red-500"
+                                                    : ""
+                                            }`}
+                                            aria-invalid={
+                                                errors.apartment
+                                                    ? "true"
+                                                    : "false"
+                                            }
                                         />
+                                        {errors.apartment && (
+                                            <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                {errors.apartment.message}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -531,14 +551,25 @@ const Checkout = () => {
                                             <input
                                                 id="city"
                                                 type="text"
-                                                name="city"
-                                                required
+                                                {...register("city")}
                                                 autoComplete="address-level2"
-                                                value={formData.city}
-                                                onChange={handleInputChange}
                                                 placeholder="City"
-                                                className="form-input"
+                                                className={`form-input ${
+                                                    errors.city
+                                                        ? "border-red-500 focus:ring-red-500"
+                                                        : ""
+                                                }`}
+                                                aria-invalid={
+                                                    errors.city
+                                                        ? "true"
+                                                        : "false"
+                                                }
                                             />
+                                            {errors.city && (
+                                                <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                    {errors.city.message}
+                                                </p>
+                                            )}
                                         </div>
                                         <div>
                                             <label
@@ -550,14 +581,25 @@ const Checkout = () => {
                                             <input
                                                 id="postalCode"
                                                 type="text"
-                                                name="postalCode"
-                                                required
+                                                {...register("postalCode")}
                                                 autoComplete="postal-code"
-                                                value={formData.postalCode}
-                                                onChange={handleInputChange}
                                                 placeholder="Postal code"
-                                                className="form-input"
+                                                className={`form-input ${
+                                                    errors.postalCode
+                                                        ? "border-red-500 focus:ring-red-500"
+                                                        : ""
+                                                }`}
+                                                aria-invalid={
+                                                    errors.postalCode
+                                                        ? "true"
+                                                        : "false"
+                                                }
                                             />
+                                            {errors.postalCode && (
+                                                <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                    {errors.postalCode.message}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
@@ -571,22 +613,29 @@ const Checkout = () => {
                                         <input
                                             id="phone"
                                             type="tel"
-                                            name="phone"
-                                            required
+                                            {...register("phone")}
                                             autoComplete="tel"
-                                            value={formData.phone}
-                                            onChange={handleInputChange}
                                             placeholder="For delivery updates"
-                                            className="form-input"
+                                            className={`form-input ${
+                                                errors.phone
+                                                    ? "border-red-500 focus:ring-red-500"
+                                                    : ""
+                                            }`}
+                                            aria-invalid={
+                                                errors.phone ? "true" : "false"
+                                            }
                                         />
+                                        {errors.phone && (
+                                            <p className="mt-1.5 text-xs font-medium text-red-500">
+                                                {errors.phone.message}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <label className="flex cursor-pointer items-start gap-3 pt-1 text-sm text-[var(--color-ink-soft)]">
                                         <input
                                             type="checkbox"
-                                            name="saveInfo"
-                                            checked={formData.saveInfo}
-                                            onChange={handleInputChange}
+                                            {...register("saveInfo")}
                                             className="form-checkbox mt-0.5"
                                         />
                                         <span>
@@ -624,14 +673,8 @@ const Checkout = () => {
                                         <div className="flex items-center gap-3">
                                             <input
                                                 type="radio"
-                                                name="shippingMethod"
                                                 value="standard"
-                                                checked={
-                                                    shippingMethod === "standard"
-                                                }
-                                                onChange={() =>
-                                                    setShippingMethod("standard")
-                                                }
+                                                {...register("shippingMethod")}
                                                 className="form-radio"
                                             />
                                             <div>
@@ -658,14 +701,8 @@ const Checkout = () => {
                                         <div className="flex items-center gap-3">
                                             <input
                                                 type="radio"
-                                                name="shippingMethod"
                                                 value="express"
-                                                checked={
-                                                    shippingMethod === "express"
-                                                }
-                                                onChange={() =>
-                                                    setShippingMethod("express")
-                                                }
+                                                {...register("shippingMethod")}
                                                 className="form-radio"
                                             />
                                             <div>

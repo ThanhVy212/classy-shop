@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext.tsx";
 import { CartProvider } from "./context/CartContext.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
+import OAuthCallback from "./pages/OAuthCallback.tsx";
 import Profile from "./pages/Profile.tsx";
 import Collection from "./pages/Collection.tsx";
 import ProductDetails from "./components/Products/ProductDetails.tsx";
@@ -20,6 +21,7 @@ import EditProduct from "./components/Admin/EditProduct.tsx";
 import CatalogManagement from "./components/Admin/CatalogManagement.tsx";
 import OrderManagement from "./components/Admin/OrderManagement.tsx";
 import UserManagement from "./components/Admin/UserManagement.tsx";
+import { AdminRoute, ProtectedRoute } from "./components/routing/ProtectedRoute.tsx";
 
 const App = () => {
     useEffect(() => {
@@ -69,14 +71,31 @@ const App = () => {
                             <Route index element={<Home />} />
                             <Route path="/login" element={<Login />}/>
                             <Route path="/register" element={<Register />}/>
-                            <Route path="/profile" element={<Profile />}/>
+                            <Route path="/oauth/callback" element={<OAuthCallback />}/>
+                            <Route path="/profile" element={
+                                <ProtectedRoute>
+                                    <Profile />
+                                </ProtectedRoute>
+                            }/>
                             <Route path="/collections/:collection" element={<Collection />}/>
                             <Route path="/products/:id" element={<ProductDetails />}/>
                             <Route path="/cart" element={<Cart />}/>
-                            <Route path="/checkout" element={<Checkout />}/>
-                            <Route path="/order/:id" element={<OrderDetails />}/>
+                            <Route path="/checkout" element={
+                                <ProtectedRoute>
+                                    <Checkout />
+                                </ProtectedRoute>
+                            }/>
+                            <Route path="/order/:id" element={
+                                <ProtectedRoute>
+                                    <OrderDetails />
+                                </ProtectedRoute>
+                            }/>
                         </Route>
-                        <Route path="/admin" element={<AdminLayout />}>
+                        <Route path="/admin" element={
+                            <AdminRoute>
+                                <AdminLayout />
+                            </AdminRoute>
+                        }>
                             <Route index element={<AdminDashboard />} />
                             <Route path="products" element={<ProductManagement />} />
                             <Route path="products/new" element={<EditProduct />} />
