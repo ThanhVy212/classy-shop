@@ -12,6 +12,7 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
 const OAUTH_STATE_COOKIE = "oauthState";
 const OAUTH_STATE_TTL = 10 * 60 * 1000;
+const GOOGLE_REQUEST_TIMEOUT_MS = 10_000;
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -293,6 +294,7 @@ export const googleCallback = async (req, res) => {
         redirect_uri: process.env.GOOGLE_CALLBACK_URL,
         grant_type: "authorization_code",
       }),
+      signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
     });
 
     const tokenData = await tokenResponse.json();
@@ -304,6 +306,7 @@ export const googleCallback = async (req, res) => {
 
     const profileResponse = await fetch(GOOGLE_USERINFO_URL, {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
     });
 
     const profile = await profileResponse.json();
@@ -313,7 +316,9 @@ export const googleCallback = async (req, res) => {
       return redirectToClient(res, "/login?oauth=error&reason=profile");
     }
 
-    if (profile.email_verified === false) {
+    // Only trust a profile when Google explicitly confirms the email is
+    // verified. Anything else (false, missing, string values) is rejected.
+    if (profile.email_verified !== true) {
       return redirectToClient(res, "/login?oauth=error&reason=email_unverified");
     }
 
@@ -321,21 +326,36 @@ export const googleCallback = async (req, res) => {
     let user = await User.findOne({ googleId: profile.sub });
 
     if (!user) {
-      user = await User.findOne({ email });
-    }
+      const existingUser = await User.findOne({ email });
 
-    if (!user) {
-      user = await User.create({
-        name: profile.name || email.split("@")[0],
-        email,
-        googleId: profile.sub,
-        avatarUrl: profile.picture || "",
-      });
+      if (existingUser) {
+        // Do not link an existing account based on email alone.
+        // Require an established, verified-email ownership check before
+        // associating the Google identity, and otherwise leave the accounts unlinked.
+        if (existingUser.isEmailVerified && !existingUser.googleId) {
+          existingUser.googleId = profile.sub;
+          if (!existingUser.avatarUrl && profile.picture) {
+            existingUser.avatarUrl = profile.picture;
+          }
+          await existingUser.save();
+          user = existingUser;
+        } else {
+          return redirectToClient(res, "/login?oauth=error&reason=account_exists");
+        }
+      } else {
+        user = await User.create({
+          name: profile.name || email.split("@")[0],
+          email,
+          googleId: profile.sub,
+          avatarUrl: profile.picture || "",
+          isEmailVerified: true,
+        });
+      }
     } else {
       let hasChanges = false;
 
-      if (!user.googleId) {
-        user.googleId = profile.sub;
+      if (!user.isEmailVerified) {
+        user.isEmailVerified = true;
         hasChanges = true;
       }
       if (!user.avatarUrl && profile.picture) {

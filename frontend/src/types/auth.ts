@@ -7,6 +7,7 @@ export interface AuthUser {
   role: UserRole;
   avatarUrl?: string;
   googleId?: string | null;
+  isEmailVerified?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
