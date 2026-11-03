@@ -9,6 +9,7 @@ import {
   uploadMultipleImages,
   deleteImage,
 } from "../controller/uploadController.js";
+import { uploadRateLimit } from "../middlewares/rateLimitMiddleware.js";
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.post(
   "/single",
   protectedRoute,
   isAdmin,
+  uploadRateLimit,
   uploadSingle("image"),
   uploadSingleImage
 );
@@ -30,6 +32,7 @@ router.post(
   "/multiple",
   protectedRoute,
   isAdmin,
+  uploadRateLimit,
   uploadMultiple("images", 10),
   uploadMultipleImages
 );
@@ -37,6 +40,6 @@ router.post(
 // @route   DELETE /api/upload
 // @desc    Delete an image from Cloudinary by publicId
 // @access  Private / Admin
-router.delete("/", protectedRoute, isAdmin, deleteImage);
+router.delete("/", protectedRoute, isAdmin, uploadRateLimit, deleteImage);
 
 export default router;
