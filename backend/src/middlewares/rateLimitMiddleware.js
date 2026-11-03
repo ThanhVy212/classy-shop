@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Ratelimit } from "@upstash/ratelimit";
 import { getRedis, isRedisConfigured } from "../config/redis.js";
 
@@ -14,8 +15,57 @@ const intFromEnv = (name, fallback) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-const windowFromEnv = (name, fallback) =>
-  process.env[name]?.trim() || fallback;
+// Mirrors the duration parser used by Ratelimit.slidingWindow (see
+// @upstash/ratelimit): decimals and the "w" unit are supported, and the
+// resulting duration must be at least 1 ms.
+const DURATION_PATTERN = /^(\d+(?:\.\d+)?)\s?(ms|s|m|h|d|w)$/;
+
+const DURATION_IN_MS = {
+  ms: 1,
+  s: 1000,
+  m: 60_000,
+  h: 3_600_000,
+  d: 86_400_000,
+  w: 604_800_000,
+};
+
+const isValidDuration = (value) => {
+  const match = DURATION_PATTERN.exec(value);
+
+  if (!match) {
+    return false;
+  }
+
+  const milliseconds = Math.round(
+    Number.parseFloat(match[1]) * DURATION_IN_MS[match[2]],
+  );
+
+  return milliseconds >= 1;
+};
+
+// Windows are resolved once per env variable and reused, so a malformed value
+// only logs a warning a single time instead of on every request.
+const windowCache = new Map();
+
+const windowFromEnv = (name, fallback) => {
+  if (windowCache.has(name)) {
+    return windowCache.get(name);
+  }
+
+  const value = process.env[name]?.trim();
+  let window = value || fallback;
+
+  if (value && !isValidDuration(value)) {
+    console.warn(
+      `[rate-limit] Invalid ${name}="${value}". Expected a duration such as ` +
+        `"30 s", "1 m", "1.5 h" or "1 w". Using "${fallback}" instead.`,
+    );
+    window = fallback;
+  }
+
+  windowCache.set(name, window);
+  return window;
+};
 
 const getClientIp = (req) =>
   req.ip || req.socket?.remoteAddress || "unknown";
@@ -163,8 +213,16 @@ export const loginRateLimit = rateLimit({
   max: () => intFromEnv("RATE_LIMIT_LOGIN_MAX", 5),
   window: () => windowFromEnv("RATE_LIMIT_LOGIN_WINDOW", "10 m"),
   keyGenerator: (req) => {
-    const identity = req.body?.email ?? req.body?.username ?? "";
-    return `${getClientIp(req)}:${String(identity).trim().toLowerCase()}`;
+    const rawIdentity = req.body?.email ?? req.body?.username;
+    const identity =
+      typeof rawIdentity === "string" ? rawIdentity.trim().toLowerCase() : "";
+    // Hash the identity so email addresses/usernames never end up in Redis keys.
+    const identityHash = crypto
+      .createHash("sha256")
+      .update(identity)
+      .digest("hex");
+
+    return `${getClientIp(req)}:${identityHash}`;
   },
 });
 

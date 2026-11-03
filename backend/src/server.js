@@ -20,12 +20,23 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 // Needed so req.ip is the real client address when running behind a proxy.
-if (process.env.TRUST_PROXY) {
-  const trustProxy = process.env.TRUST_PROXY.trim();
+// TRUST_PROXY accepts a hop count ("1", "2") or a comma-separated list of
+// proxy subnets ("127.0.0.1/8,10.0.0.0/8"). "true" is rejected because it
+// would trust any client-supplied X-Forwarded-For value.
+const trustProxy = process.env.TRUST_PROXY?.trim();
+
+if (trustProxy && trustProxy.toLowerCase() !== "false") {
+  if (trustProxy.toLowerCase() === "true") {
+    throw new Error(
+      'TRUST_PROXY="true" is not supported because it allows clients to spoof ' +
+        'X-Forwarded-For. Use a hop count (e.g. "1") or a proxy subnet list ' +
+        '(e.g. "127.0.0.1/8,10.0.0.0/8") instead.',
+    );
+  }
 
   app.set(
     "trust proxy",
-    trustProxy === "true" ? true : /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy,
+    /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy,
   );
 }
 
