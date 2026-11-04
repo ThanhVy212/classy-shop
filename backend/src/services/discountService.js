@@ -112,6 +112,20 @@ export const recordDiscountUsage = async (discountId) => {
  * storefront references keep working. Admins can edit or remove them later.
  */
 export const ensureDefaultDiscountCodes = async () => {
+  const isEnabled = (flag) => {
+    if (!flag) return false;
+    const normalized = String(flag).trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes";
+  };
+
+  const shouldSeed =
+    isEnabled(process.env.SEED_DEFAULT_DISCOUNT_CODES) ||
+    isEnabled(process.env.SEED_DISCOUNT_CODES) ||
+    isEnabled(process.env.SEED_DEFAULT_DISCOUNTS) ||
+    isEnabled(process.env.SEED_DISCOUNTS);
+
+  if (!shouldSeed) return;
+
   const existingCount = await DiscountCode.countDocuments();
 
   if (existingCount > 0) return;

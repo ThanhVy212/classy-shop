@@ -57,16 +57,18 @@ const generateOrderNumber = () => {
 };
 
 const normalizeShippingAddress = (input = {}) => {
+  const safeInput =
+    input && typeof input === "object" && !Array.isArray(input) ? input : {};
   const field = (value) => (typeof value === "string" ? value.trim() : "");
 
   return {
-    fullName: field(input.fullName),
-    phone: field(input.phone),
-    address: field(input.address),
-    apartment: field(input.apartment),
-    city: field(input.city),
-    postalCode: field(input.postalCode),
-    country: field(input.country),
+    fullName: field(safeInput.fullName),
+    phone: field(safeInput.phone),
+    address: field(safeInput.address),
+    apartment: field(safeInput.apartment),
+    city: field(safeInput.city),
+    postalCode: field(safeInput.postalCode),
+    country: field(safeInput.country),
   };
 };
 
@@ -504,34 +506,60 @@ export const cancelOrder = async (req, res) => {
       });
     }
 
-    await restoreStock(order);
-
     const now = new Date();
-    order.orderStatus = "Cancelled";
-    order.cancelledAt = now;
-    order.cancelReason = String(req.body?.reason || "").trim().slice(0, 500);
-    order.isDelivered = false;
-    order.deliveredAt = null;
-    order.statusHistory.push({
-      status: "Cancelled",
-      changedAt: now,
-      note: order.cancelReason || "Cancelled by customer",
-    });
+    const cancelReason = String(req.body?.reason || "").trim().slice(0, 500);
+
+    const update = {
+      $set: {
+        orderStatus: "Cancelled",
+        cancelledAt: now,
+        cancelReason,
+        isDelivered: false,
+        deliveredAt: null,
+      },
+      $push: {
+        statusHistory: {
+          status: "Cancelled",
+          changedAt: now,
+          note: cancelReason || "Cancelled by customer",
+        },
+      },
+    };
 
     if (order.paymentStatus === "paid") {
-      order.paymentStatus = "refunded";
-      order.isPaid = false;
-      order.refundedAt = now;
-      order.paymentHistory.push({
+      update.$set.paymentStatus = "refunded";
+      update.$set.isPaid = false;
+      update.$set.refundedAt = now;
+      update.$push.paymentHistory = {
         status: "refunded",
         changedAt: now,
         note: "Order cancelled after payment",
+      };
+    }
+
+    const updatedOrder = await Order.findOneAndUpdate(
+      { _id: id, orderStatus: "Processing" },
+      update,
+      { new: true },
+    );
+
+    if (!updatedOrder) {
+      const current = await Order.findById(id);
+      if (!current) {
+        return res.status(404).json({ message: "Order not found." });
+      }
+      if (current.orderStatus === "Cancelled") {
+        return res.status(400).json({ message: "This order is already cancelled." });
+      }
+      return res.status(400).json({
+        message:
+          "This order has already shipped. Please contact support to request a cancellation.",
       });
     }
 
-    await order.save();
+    await restoreStock(order);
 
-    return res.status(200).json({ order });
+    return res.status(200).json({ order: updatedOrder });
   } catch (error) {
     console.error("Cancel order error:", error);
     return res.status(500).json({ message: "Could not cancel this order." });
@@ -705,22 +733,66 @@ export const updateOrderStatus = async (req, res) => {
     const previousStatus = order.orderStatus;
 
     if (status === "Cancelled") {
-      await restoreStock(order);
-      order.cancelledAt = now;
-      order.cancelReason = String(note || "").trim().slice(0, 500);
-      order.isDelivered = false;
-      order.deliveredAt = null;
+      const cancelReason = String(note || "").trim().slice(0, 500);
+
+      const update = {
+        $set: {
+          orderStatus: "Cancelled",
+          cancelledAt: now,
+          cancelReason,
+          isDelivered: false,
+          deliveredAt: null,
+        },
+        $push: {
+          statusHistory: {
+            status: "Cancelled",
+            changedAt: now,
+            note: cancelReason || `Changed from ${previousStatus}`,
+          },
+        },
+      };
 
       if (order.paymentStatus === "paid") {
-        order.paymentStatus = "refunded";
-        order.isPaid = false;
-        order.refundedAt = now;
-        order.paymentHistory.push({
+        update.$set.paymentStatus = "refunded";
+        update.$set.isPaid = false;
+        update.$set.refundedAt = now;
+        update.$push.paymentHistory = {
           status: "refunded",
           changedAt: now,
           note: "Order cancelled",
+        };
+      }
+
+      const updatedOrder = await Order.findOneAndUpdate(
+        { _id: id, orderStatus: "Processing" },
+        update,
+        { new: true },
+      );
+
+      if (!updatedOrder) {
+        const current = await Order.findById(id);
+        if (!current) {
+          return res.status(404).json({ message: "Order not found." });
+        }
+        if (current.orderStatus === "Cancelled") {
+          return res.status(400).json({
+            message: "This order is already cancelled.",
+          });
+        }
+        return res.status(400).json({
+          message:
+            "Orders can only be cancelled while they are processing. This order has already shipped.",
         });
       }
+
+      await restoreStock(order);
+
+      const populatedOrder = await Order.findById(updatedOrder._id).populate(
+        "user",
+        "name email",
+      );
+
+      return res.status(200).json({ order: populatedOrder ?? updatedOrder });
     }
 
     if (status === "Delivered") {
@@ -740,7 +812,7 @@ export const updateOrderStatus = async (req, res) => {
       }
     }
 
-    if (status === "Shipped") {
+    if (status === "Processing" || status === "Shipped") {
       order.isDelivered = false;
       order.deliveredAt = null;
     }

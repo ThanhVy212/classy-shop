@@ -274,6 +274,7 @@ const UserManagement = () => {
                             <h3 className="card-title">Add New User</h3>
                             <Button
                                 type="button"
+                                aria-label="Close add user dialog"
                                 onClick={() => setIsAddModalOpen(false)}
                                 className="text-gray-400 hover:text-black p-1"
                             >

@@ -504,6 +504,7 @@ const EditProduct = () => {
                                     <Button
                                         type="button"
                                         key={size}
+                                        aria-pressed={selected}
                                         onClick={() => toggleSize(size)}
                                         className={`px-4 py-2 rounded-xl text-xs font-bold transition border ${
                                             selected
@@ -530,6 +531,7 @@ const EditProduct = () => {
                                     <Button
                                         type="button"
                                         key={col.name}
+                                        aria-pressed={selected}
                                         onClick={() => toggleColor(col.name)}
                                         className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
                                             selected

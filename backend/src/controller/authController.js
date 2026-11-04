@@ -247,6 +247,7 @@ export const updateAvatar = async (req, res) => {
     }
 
     const result = await uploadToCloudinary(req.file.buffer, {
+      resource_type: "image",
       folder: "classyshop/avatars",
       transformation: [
         { width: 400, height: 400, crop: "fill", gravity: "face" },

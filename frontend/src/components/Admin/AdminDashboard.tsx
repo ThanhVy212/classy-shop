@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
     AlertCircle,
@@ -78,8 +78,11 @@ const AdminDashboard = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const latestRequestIdRef = useRef(0);
 
     const loadDashboard = useCallback(async (refresh = false) => {
+        const requestId = ++latestRequestIdRef.current;
+
         if (refresh) {
             setIsRefreshing(true);
         } else {
@@ -89,9 +92,13 @@ const AdminDashboard = () => {
 
         try {
             const data = await dashboardService.getDashboard();
+            if (requestId !== latestRequestIdRef.current) return;
+
             setDashboard(data);
             setLastUpdated(new Date());
         } catch (loadError) {
+            if (requestId !== latestRequestIdRef.current) return;
+
             setError(
                 getApiErrorMessage(
                     loadError,
@@ -99,8 +106,10 @@ const AdminDashboard = () => {
                 )
             );
         } finally {
-            setIsLoading(false);
-            setIsRefreshing(false);
+            if (requestId === latestRequestIdRef.current) {
+                setIsLoading(false);
+                setIsRefreshing(false);
+            }
         }
     }, []);
 
