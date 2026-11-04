@@ -280,7 +280,8 @@ const ProductManagement = () => {
                             <Edit className="w-4 h-4" />
                           </Link>
 
-                          <button
+                          <Button
+                            type="button"
                             onClick={() =>
                               handleDeleteProduct(prod.id, prod.name)
                             }
@@ -288,7 +289,7 @@ const ProductManagement = () => {
                             title="Delete product"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -303,16 +304,17 @@ const ProductManagement = () => {
                       <p className="font-medium text-sm">
                         No products found matching your filters
                       </p>
-                      <button
+                      <Button
+                        type="button"
                         onClick={() => {
                           setSearchTerm("");
                           setSelectedCategory("all");
                           setStockFilter("all");
                         }}
-                        className="text-xs text-red-600 font-semibold underline mt-2 cursor-pointer"
+                        className="text-xs text-red-600 font-semibold underline mt-2"
                       >
                         Reset filters
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 )}

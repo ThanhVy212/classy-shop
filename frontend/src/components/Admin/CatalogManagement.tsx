@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import Button from "../Common/Button.tsx";
 import { catalogService } from "../../services/catalogService.ts";
 import type { CatalogItem, CatalogType } from "../../types/catalog.ts";
 import { CATALOG_TYPES, CATALOG_TYPE_LABELS } from "../../types/catalog.ts";
@@ -189,7 +190,7 @@ const CatalogManagement = () => {
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 border-b border-gray-100 pb-4">
           {CATALOG_TYPES.map((type) => (
-            <button
+            <Button
               key={type}
               type="button"
               onClick={() => {
@@ -197,7 +198,7 @@ const CatalogManagement = () => {
                 cancelEditing();
                 setNewName("");
               }}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition ${
                 activeType === type
                   ? "bg-black text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -214,7 +215,7 @@ const CatalogManagement = () => {
               >
                 {counts[type]}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -227,7 +228,7 @@ const CatalogManagement = () => {
             placeholder={`Add a new ${CATALOG_TYPE_LABELS[activeType].toLowerCase()}...`}
             className="form-input flex-1"
           />
-          <button
+          <Button
             type="submit"
             disabled={isCreating || !newName.trim()}
             className="btn-primary-action justify-center disabled:opacity-50 disabled:cursor-not-allowed"
@@ -238,7 +239,7 @@ const CatalogManagement = () => {
               <Plus className="w-4 h-4" />
             )}
             Add {CATALOG_TYPE_LABELS[activeType]}
-          </button>
+          </Button>
         </form>
 
         {/* List */}
@@ -296,11 +297,11 @@ const CatalogManagement = () => {
 
                     {isEditing ? (
                       <div className="flex items-center gap-1.5">
-                        <button
+                        <Button
                           type="button"
                           onClick={() => handleUpdate(item)}
                           disabled={isSaving}
-                          className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition cursor-pointer disabled:opacity-50"
+                          className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition disabled:opacity-50"
                           title="Save"
                         >
                           {isSaving ? (
@@ -308,35 +309,35 @@ const CatalogManagement = () => {
                           ) : (
                             <Check className="w-4 h-4" />
                           )}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
                           onClick={cancelEditing}
                           disabled={isSaving}
-                          className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition cursor-pointer disabled:opacity-50"
+                          className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition disabled:opacity-50"
                           title="Cancel"
                         >
                           <X className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <button
+                        <Button
                           type="button"
                           onClick={() => startEditing(item)}
                           className="btn-action-edit"
                           title="Rename"
                         >
                           <Edit className="w-4 h-4" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
                           onClick={() => handleDelete(item)}
                           className="btn-action-delete"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </li>

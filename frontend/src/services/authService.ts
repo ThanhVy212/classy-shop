@@ -1,6 +1,6 @@
 import api from "./api";
 import type { LoginFormData, RegisterFormData } from "../validations/auth";
-import type { AuthResponse, ProfileResponse } from "../types/auth";
+import type { AuthResponse, AuthUser, ProfileResponse } from "../types/auth";
 import axios from "axios";
 
 export const authService = {
@@ -26,6 +26,22 @@ export const authService = {
   async getProfile(): Promise<ProfileResponse> {
     const response = await api.get<ProfileResponse>("/auth/me");
     return response.data;
+  },
+
+  async uploadAvatar(file: File): Promise<AuthUser> {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await api.post<{ user: AuthUser }>(
+      "/auth/avatar",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data.user;
   },
 };
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -30,12 +30,13 @@ import {
     type CheckoutFormData,
 } from "../../validations/checkout.ts";
 import { getColorStyle } from "../../utils/colors.ts";
+import { orderService } from "../../services/orderService.ts";
+import { discountService } from "../../services/discountService.ts";
+import type { PaymentMethod } from "../../types/order.ts";
+import type { DiscountValidation } from "../../types/discount.ts";
+import { calculateDiscountPreview } from "../../utils/discount.ts";
+import { getApiErrorMessage } from "../../utils/apiError.ts";
 import Button from "../Common/Button.tsx";
-
-const PROMO_CODES: Record<string, number> = {
-    CLASSY10: 0.1,
-    WELCOME15: 0.15,
-};
 
 const getItemKey = (productId: string, size: string, color: string) =>
     `${productId}-${size}-${color}`;
@@ -60,11 +61,13 @@ const getCheckoutDefaults = (name?: string, email?: string): CheckoutFormData =>
 };
 
 const Checkout = () => {
+    const navigate = useNavigate();
     const {
         cart,
         refreshCart,
         updateQuantity,
         removeFromCart,
+        clearCart,
         isLoading: cartLoading,
     } = useCart();
     const { isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -85,8 +88,12 @@ const Checkout = () => {
     const shippingMethod = useWatch({ control, name: "shippingMethod" });
 
     const [promoCode, setPromoCode] = useState("");
-    const [appliedCode, setAppliedCode] = useState<string | null>(null);
+    const [appliedDiscount, setAppliedDiscount] =
+        useState<DiscountValidation | null>(null);
+    const [isApplyingPromo, setIsApplyingPromo] = useState(false);
     const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const hasRequestedCart = useRef(false);
 
@@ -118,30 +125,36 @@ const Checkout = () => {
     } = useSyncedCart();
 
     const shippingCost = shippingMethod === "express" ? 15 : 0;
-    const discount = appliedCode ? subtotal * (PROMO_CODES[appliedCode] || 0) : 0;
+    const discount = calculateDiscountPreview(appliedDiscount, subtotal);
     const tax = Math.round(subtotal * 0.08 * 100) / 100;
     const total = Math.max(0, subtotal + shippingCost + tax - discount);
 
-    const handleApplyPromo = () => {
+    const handleApplyPromo = async () => {
         const code = promoCode.trim().toUpperCase();
-        if (!code) return;
+        if (!code || isApplyingPromo) return;
 
-        const rate = PROMO_CODES[code];
-        if (!rate) {
-            toast.error("That promo code isn't valid.");
-            return;
+        setIsApplyingPromo(true);
+
+        try {
+            const result = await discountService.validate(code, subtotal);
+
+            setAppliedDiscount(result);
+            setPromoCode("");
+            toast.success(
+                `${result.code} applied — $${result.discountAmount.toFixed(2)} off`
+            );
+        } catch (error) {
+            toast.error(
+                getApiErrorMessage(error, "That discount code isn't valid.")
+            );
+        } finally {
+            setIsApplyingPromo(false);
         }
-
-        setAppliedCode(code);
-        setPromoCode("");
-        toast.success(
-            `${code} applied — ${Math.round(rate * 100)}% off your order`
-        );
     };
 
     const handleRemovePromo = () => {
-        setAppliedCode(null);
-        toast.info("Promo code removed");
+        setAppliedDiscount(null);
+        toast.info("Discount code removed");
     };
 
     const handleQuantityChange = async (item: SyncedCartLine, next: number) => {
@@ -184,12 +197,14 @@ const Checkout = () => {
     };
 
     /* ====================================================================
-       TODO: PAYMENT HANDLE
-       Payment is intentionally not connected yet. This trigger only
-       validates/reports the synced checkout payload — no order is created
-       and no charge is made. Wire Stripe/PayPal/COD here later.
+       ORDER CREATION
+       Cash on delivery is the only enabled payment method for now. The
+       backend recomputes every price, discount and tax value from the
+       product catalog before creating the order.
        ==================================================================== */
-    const onSubmit = (data: CheckoutFormData) => {
+    const onSubmit = async (data: CheckoutFormData) => {
+        if (isSubmitting) return;
+
         const unavailableItem = checkoutItems.find((item) => !item.inStock);
         if (unavailableItem) {
             toast.error(`${unavailableItem.name} is out of stock`, {
@@ -198,21 +213,45 @@ const Checkout = () => {
             return;
         }
 
-        console.log("[checkout] Ready for payment integration:", {
-            customer: data,
-            shippingMethod: data.shippingMethod,
-            items: checkoutItems,
-            subtotal,
-            shippingCost,
-            tax,
-            discount,
-            total,
-        });
+        setIsSubmitting(true);
 
-        toast.info("Payment isn't connected yet", {
-            description:
-                "Your bag and totals are synced. Payment will be enabled in a future update.",
-        });
+        try {
+            const order = await orderService.createOrder({
+                contactEmail: data.email,
+                shippingAddress: {
+                    fullName: `${data.firstName} ${data.lastName}`.trim(),
+                    phone: data.phone,
+                    address: data.address,
+                    apartment: data.apartment,
+                    city: data.city,
+                    postalCode: data.postalCode,
+                    country: data.country,
+                },
+                shippingMethod: data.shippingMethod,
+                paymentMethod,
+                promoCode: appliedDiscount?.code ?? null,
+            });
+
+            clearCart();
+            void refreshCart();
+
+            toast.success("Order placed successfully", {
+                description: `Order ${order.orderNumber} is confirmed. You'll pay in cash when it arrives.`,
+            });
+
+            navigate(`/order/${order._id}`, {
+                state: { justPlaced: true },
+            });
+        } catch (error) {
+            toast.error(
+                getApiErrorMessage(
+                    error,
+                    "Could not place your order. Please try again."
+                )
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (authLoading || (!cart && cartLoading)) {
@@ -721,7 +760,7 @@ const Checkout = () => {
                                 </div>
                             </section>
 
-                            {/* Payment placeholder */}
+                            {/* Payment */}
                             <section className="checkout-card p-6 sm:p-8">
                                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-border)] pb-4">
                                     <div className="flex items-center gap-2.5">
@@ -737,29 +776,55 @@ const Checkout = () => {
                                             </h2>
                                         </div>
                                     </div>
-                                    <span className="rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent-soft)] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--color-accent)]">
-                                        Coming soon
+                                    <span className="rounded-full border border-[var(--color-success)]/30 bg-[var(--color-primary-soft)] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">
+                                        Cash on delivery
                                     </span>
                                 </div>
 
-                                <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                                    <label className="flex cursor-pointer flex-col gap-2 rounded-2xl border border-[var(--color-primary)] bg-[var(--color-primary-soft)]/50 p-4 ring-1 ring-[var(--color-primary)]">
+                                        <span className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                value="COD"
+                                                checked={paymentMethod === "COD"}
+                                                onChange={() =>
+                                                    setPaymentMethod("COD")
+                                                }
+                                                className="form-radio"
+                                            />
+                                            <Banknote className="h-4 w-4 text-[var(--color-primary)]" />
+                                            <span className="text-sm font-semibold text-[var(--color-ink)]">
+                                                Cash on delivery
+                                            </span>
+                                        </span>
+                                        <span className="text-xs leading-relaxed text-[var(--color-ink-soft)]">
+                                            Pay in cash when your order
+                                            arrives. Available now.
+                                        </span>
+                                    </label>
+
                                     {[
                                         {
                                             label: "Credit / debit card",
                                             icon: CreditCard,
                                         },
                                         { label: "PayPal", icon: Wallet },
-                                        {
-                                            label: "Cash on delivery",
-                                            icon: Banknote,
-                                        },
                                     ].map(({ label, icon: Icon }) => (
                                         <div
                                             key={label}
-                                            className="flex items-center gap-2 rounded-xl border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-muted)]/40 px-3 py-3 text-xs font-medium text-[var(--color-ink-soft)]"
+                                            className="flex flex-col gap-2 rounded-2xl border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-muted)]/40 p-4"
                                         >
-                                            <Icon className="h-4 w-4 shrink-0 text-[var(--color-ink-muted)]" />
-                                            <span>{label}</span>
+                                            <span className="flex items-center gap-2">
+                                                <Icon className="h-4 w-4 shrink-0 text-[var(--color-ink-muted)]" />
+                                                <span className="text-sm font-medium text-[var(--color-ink-soft)]">
+                                                    {label}
+                                                </span>
+                                            </span>
+                                            <span className="text-xs text-[var(--color-ink-muted)]">
+                                                Coming soon
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
@@ -767,10 +832,11 @@ const Checkout = () => {
                                 <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-[var(--color-primary-soft)] px-4 py-3 text-xs leading-relaxed text-[var(--color-primary)]">
                                     <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
                                     <p>
-                                        Payment isn't connected yet. Your bag,
-                                        live prices, stock and totals are already
-                                        synced — no charge will be made at this
-                                        step.
+                                        Your order is created immediately and
+                                        reserved from stock. Payment is
+                                        collected in cash by the courier when
+                                        your order is delivered — no card
+                                        details are needed.
                                     </p>
                                 </div>
                             </section>
@@ -778,18 +844,24 @@ const Checkout = () => {
                             <div className="space-y-3 pt-1">
                                 <Button
                                     type="submit"
-                                    className="checkout-primary-button group"
+                                    disabled={isSubmitting}
+                                    className="checkout-primary-button group disabled:opacity-70"
                                 >
                                     <Lock className="h-4 w-4" />
                                     <span>
-                                        {`Continue to payment · $${total.toFixed(2)}`}
+                                        {isSubmitting
+                                            ? "Placing your order…"
+                                            : `Place order · $${total.toFixed(2)}`}
                                     </span>
-                                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                    {!isSubmitting && (
+                                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                    )}
                                 </Button>
 
                                 <p className="text-center text-[11px] leading-relaxed text-[var(--color-ink-muted)]">
-                                    Payment integration coming soon. Your
-                                    details stay on this device.
+                                    By placing your order you agree to pay in
+                                    cash on delivery. You can cancel while the
+                                    order is still processing.
                                 </p>
 
                                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
@@ -1010,12 +1082,14 @@ const Checkout = () => {
 
                                 {/* Promo code */}
                                 <div className="border-t border-[var(--color-border)] px-6 py-4">
-                                    {appliedCode ? (
+                                    {appliedDiscount ? (
                                         <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-success)]/30 bg-[var(--color-primary-soft)] px-3.5 py-2.5 text-xs text-[var(--color-primary)]">
                                             <span className="inline-flex items-center gap-1.5">
                                                 <Tag className="h-3.5 w-3.5" />
                                                 <span>
-                                                    <strong>{appliedCode}</strong>{" "}
+                                                    <strong>
+                                                        {appliedDiscount.code}
+                                                    </strong>{" "}
                                                     applied (−$
                                                     {discount.toFixed(2)})
                                                 </span>
@@ -1045,7 +1119,7 @@ const Checkout = () => {
                                                             e.key === "Enter"
                                                         ) {
                                                             e.preventDefault();
-                                                            handleApplyPromo();
+                                                            void handleApplyPromo();
                                                         }
                                                     }}
                                                     placeholder="Discount code"
@@ -1055,16 +1129,19 @@ const Checkout = () => {
                                             </div>
                                             <button
                                                 type="button"
-                                                onClick={handleApplyPromo}
-                                                className="rounded-xl border border-[var(--color-border-strong)] px-4 py-2.5 text-xs font-semibold text-[var(--color-ink)] transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary)]"
+                                                onClick={() => void handleApplyPromo()}
+                                                disabled={isApplyingPromo}
+                                                className="rounded-xl border border-[var(--color-border-strong)] px-4 py-2.5 text-xs font-semibold text-[var(--color-ink)] transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary)] disabled:cursor-wait disabled:opacity-60"
                                             >
-                                                Apply
+                                                {isApplyingPromo
+                                                    ? "Applying…"
+                                                    : "Apply"}
                                             </button>
                                         </div>
                                     )}
                                     <p className="mt-2 text-[11px] text-[var(--color-ink-muted)]">
-                                        Try <strong>CLASSY10</strong> or{" "}
-                                        <strong>WELCOME15</strong>
+                                        Enter a valid discount code. One code
+                                        per order.
                                     </p>
                                 </div>
 
