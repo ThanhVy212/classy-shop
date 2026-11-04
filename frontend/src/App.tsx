@@ -20,6 +20,7 @@ import ProductManagement from "./components/Admin/ProductManagement.tsx";
 import EditProduct from "./components/Admin/EditProduct.tsx";
 import CatalogManagement from "./components/Admin/CatalogManagement.tsx";
 import OrderManagement from "./components/Admin/OrderManagement.tsx";
+import DiscountManagement from "./components/Admin/DiscountManagement.tsx";
 import UserManagement from "./components/Admin/UserManagement.tsx";
 import { AdminRoute, ProtectedRoute } from "./components/routing/ProtectedRoute.tsx";
 
@@ -102,6 +103,8 @@ const App = () => {
                             <Route path="products/:id/edit" element={<EditProduct />} />
                             <Route path="catalog" element={<CatalogManagement />} />
                             <Route path="orders" element={<OrderManagement />} />
+                            <Route path="orders/:id" element={<OrderDetails />} />
+                            <Route path="discounts" element={<DiscountManagement />} />
                             <Route path="users" element={<UserManagement />} />
                         </Route>
                     </Routes>

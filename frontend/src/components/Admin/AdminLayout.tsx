@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
+    BadgePercent,
     LayoutDashboard,
     ShoppingBag,
     Package,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import logo from "../../assets/logo.svg";
 import { toast } from "sonner";
+import Button from "../Common/Button.tsx";
 import { useAuth } from "../../hooks/useAuth.ts";
 
 const AdminLayout = () => {
@@ -35,6 +37,7 @@ const AdminLayout = () => {
         { name: "Products", href: "/admin/products", icon: ShoppingBag, end: false },
         { name: "Catalog", href: "/admin/catalog", icon: Tags, end: false },
         { name: "Orders", href: "/admin/orders", icon: Package, end: false },
+        { name: "Discounts", href: "/admin/discounts", icon: BadgePercent, end: false },
         { name: "Users", href: "/admin/users", icon: Users, end: false },
     ];
 
@@ -71,13 +74,14 @@ const AdminLayout = () => {
                         </div>
                     </Link>
 
-                    <button
+                    <Button
+                        type="button"
                         onClick={() => setSidebarOpen(false)}
                         className="lg:hidden text-gray-400 hover:text-white p-1"
                         aria-label="Close sidebar"
                     >
                         <X className="w-5 h-5" />
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Navigation Links */}
@@ -121,13 +125,14 @@ const AdminLayout = () => {
                         <span>View Live Store</span>
                     </Link>
 
-                    <button
+                    <Button
+                        type="button"
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-950/30 transition-all cursor-pointer text-left"
+                        className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-950/30 transition-all text-left"
                     >
                         <LogOut className="w-4 h-4" />
                         <span>Log Out</span>
-                    </button>
+                    </Button>
                 </div>
             </aside>
 
@@ -136,13 +141,14 @@ const AdminLayout = () => {
                 {/* Admin Topbar */}
                 <header className="h-16 bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs">
                     <div className="flex items-center gap-3">
-                        <button
+                        <Button
+                            type="button"
                             onClick={() => setSidebarOpen(true)}
                             className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-black hover:bg-gray-100 transition"
                             aria-label="Open sidebar"
                         >
                             <Menu className="w-5 h-5" />
-                        </button>
+                        </Button>
                         <h2 className="text-base sm:text-lg font-bold text-gray-900 truncate">
                             Admin Control Panel
                         </h2>
@@ -157,14 +163,15 @@ const AdminLayout = () => {
                             <span>Storefront</span>
                         </Link>
 
-                        <button
+                        <Button
+                            type="button"
                             onClick={() => toast.info("No unread admin notifications")}
-                            className="p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition relative cursor-pointer"
+                            className="p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition relative"
                             aria-label="Notifications"
                         >
                             <Bell className="w-5 h-5" />
                             <span className="w-2 h-2 rounded-full bg-red-600 absolute top-1.5 right-1.5" />
-                        </button>
+                        </Button>
 
                         <div className="flex items-center gap-2.5 pl-3 border-l border-gray-200">
                             {user?.avatarUrl ? (

@@ -10,11 +10,17 @@ import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import catalogRoutes from "./routes/catalogRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import adminOrderRoutes from "./routes/adminOrderRoutes.js";
+import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
+import discountRoutes from "./routes/discountRoutes.js";
+import adminDiscountRoutes from "./routes/adminDiscountRoutes.js";
 import {
   apiRateLimit,
   writeRateLimit,
 } from "./middlewares/rateLimitMiddleware.js";
 import { syncCatalogFromProducts } from "./services/catalogService.js";
+import { ensureDefaultDiscountCodes } from "./services/discountService.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -59,6 +65,11 @@ app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/catalog", catalogRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/admin/orders", adminOrderRoutes);
+app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/discounts", discountRoutes);
+app.use("/api/admin/discounts", adminDiscountRoutes);
 
 // Connect to MongoDB
 connectDB().then(async () => {
@@ -67,6 +78,13 @@ connectDB().then(async () => {
     await syncCatalogFromProducts();
   } catch (error) {
     console.error("Could not sync product catalog:", error);
+  }
+
+  // Keep the original storefront promo codes available on a fresh database.
+  try {
+    await ensureDefaultDiscountCodes();
+  } catch (error) {
+    console.error("Could not initialize discount codes:", error);
   }
 
   app.listen(PORT, () => {

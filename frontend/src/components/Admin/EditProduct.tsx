@@ -275,12 +275,12 @@ const EditProduct = () => {
 
                 <div className="flex items-center gap-3">
                     <Link to="/admin/products">
-                        <button
+                        <Button
                             type="button"
                             className="btn-outline"
                         >
                             Cancel
-                        </button>
+                        </Button>
                     </Link>
 
                     <Button
@@ -501,18 +501,18 @@ const EditProduct = () => {
                             {AVAILABLE_SIZES.map((size) => {
                                 const selected = formData.sizes.includes(size);
                                 return (
-                                    <button
+                                    <Button
                                         type="button"
                                         key={size}
                                         onClick={() => toggleSize(size)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition border ${
                                             selected
                                                 ? "bg-black text-white border-black shadow-xs"
                                                 : "bg-white text-gray-700 border-gray-300 hover:border-black"
                                         }`}
                                     >
                                         {size}
-                                    </button>
+                                    </Button>
                                 );
                             })}
                         </div>
@@ -527,11 +527,11 @@ const EditProduct = () => {
                             {displayedColors.map((col) => {
                                 const selected = formData.colors.includes(col.name);
                                 return (
-                                    <button
+                                    <Button
                                         type="button"
                                         key={col.name}
                                         onClick={() => toggleColor(col.name)}
-                                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
                                             selected
                                                 ? "border-black bg-gray-50 ring-1 ring-black"
                                                 : "border-gray-200 hover:border-gray-400 bg-white"
@@ -543,7 +543,7 @@ const EditProduct = () => {
                                         />
                                         <span>{col.name}</span>
                                         {selected && <Check className="w-3.5 h-3.5 text-black" />}
-                                    </button>
+                                    </Button>
                                 );
                             })}
                         </div>
@@ -580,13 +580,13 @@ const EditProduct = () => {
                             placeholder="Paste image URL (optional, e.g. https://...)"
                             className="form-input flex-1"
                         />
-                        <button
+                        <Button
                             type="button"
                             onClick={handleAddImage}
-                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold rounded-xl transition cursor-pointer"
+                            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold rounded-xl transition"
                         >
                             Add URL
-                        </button>
+                        </Button>
                     </div>
 
                     {/* Image Thumbnails Gallery */}
@@ -606,14 +606,14 @@ const EditProduct = () => {
                                         Cover
                                     </span>
                                 )}
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => handleRemoveImage(index)}
-                                    className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm hover:bg-red-700"
+                                    className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-700"
                                     title="Delete photo"
                                 >
                                     <X className="w-3.5 h-3.5" />
-                                </button>
+                                </Button>
                             </div>
                         ))}
 
@@ -645,12 +645,12 @@ const EditProduct = () => {
                 {/* Form Action Submit */}
                 <div className="flex items-center justify-end gap-3 pt-4">
                     <Link to="/admin/products">
-                        <button
+                        <Button
                             type="button"
-                            className="px-5 py-3 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                            className="px-5 py-3 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
                         >
                             Cancel
-                        </button>
+                        </Button>
                     </Link>
 
                     <Button

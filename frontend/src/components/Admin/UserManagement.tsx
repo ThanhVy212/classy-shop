@@ -236,13 +236,14 @@ const UserManagement = () => {
                                             {new Date(user.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="py-4 px-5 text-right whitespace-nowrap">
-                                            <button
+                                            <Button
+                                                type="button"
                                                 onClick={() => handleDeleteUser(user._id, user.name)}
                                                 className="btn-action-delete"
                                                 title="Delete user account"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))
@@ -271,12 +272,13 @@ const UserManagement = () => {
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                             <h3 className="card-title">Add New User</h3>
-                            <button
+                            <Button
+                                type="button"
                                 onClick={() => setIsAddModalOpen(false)}
                                 className="text-gray-400 hover:text-black p-1"
                             >
                                 <X className="w-5 h-5" />
-                            </button>
+                            </Button>
                         </div>
 
                         <form onSubmit={handleCreateUser} className="space-y-4 pt-4">
@@ -332,13 +334,13 @@ const UserManagement = () => {
                             </div>
 
                             <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => setIsAddModalOpen(false)}
                                     className="btn-outline py-2 text-xs"
                                 >
                                     Cancel
-                                </button>
+                                </Button>
                                 <Button
                                     type="submit"
                                     className="btn-black px-5 py-2 rounded-xl text-xs font-semibold"

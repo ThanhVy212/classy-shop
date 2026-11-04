@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Session from "../models/Session.js";
+import { uploadToCloudinary } from "../config/cloudinary.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -232,6 +233,43 @@ export const getProfile = async (req, res) => {
   } catch (e) {
     console.error("Get Profile error:", e);
     return res.status(500).json({ message: "Failed to getProfile" });
+  }
+};
+
+/**
+ * POST /api/auth/avatar
+ * Upload or replace the signed-in user's avatar.
+ */
+export const updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Please choose an image to upload." });
+    }
+
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "classyshop/avatars",
+      transformation: [
+        { width: 400, height: 400, crop: "fill", gravity: "face" },
+        { quality: "auto", fetch_format: "auto" },
+      ],
+    });
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    user.avatarUrl = result.secure_url;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Avatar updated successfully",
+      user: user.toJSON(),
+    });
+  } catch (e) {
+    console.error("Update avatar error:", e);
+    return res.status(500).json({ message: "Could not update your avatar." });
   }
 };
 
