@@ -49,24 +49,74 @@ const AdminLayout = () => {
     const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
     const [isSocketConnected, setIsSocketConnected] = useState(false);
     const notificationsRef = useRef<HTMLDivElement | null>(null);
+    const knownNotificationIdsRef = useRef<Set<string>>(new Set());
+    const refreshRequestIdRef = useRef(0);
+    const acceptedSocketEventsCountRef = useRef(0);
 
     const refreshNotifications = useCallback(async () => {
+        const requestId = ++refreshRequestIdRef.current;
+        const eventsCountAtStart = acceptedSocketEventsCountRef.current;
+
         try {
             const data = await notificationService.getNotifications({ limit: 12 });
-            setNotifications(data.notifications);
-            setUnreadCount(data.unreadCount);
+            if (requestId !== refreshRequestIdRef.current) {
+                return;
+            }
+
+            for (const item of data.notifications) {
+                knownNotificationIdsRef.current.add(item._id);
+            }
+
+            setNotifications((current) => {
+                const map = new Map<string, AdminNotification>();
+                for (const item of data.notifications) {
+                    map.set(item._id, item);
+                }
+                for (const item of current) {
+                    const existing = map.get(item._id);
+                    if (existing) {
+                        if (item.isRead && !existing.isRead) {
+                            map.set(item._id, { ...existing, isRead: true });
+                        }
+                    } else {
+                        map.set(item._id, item);
+                    }
+                }
+
+                return Array.from(map.values())
+                    .sort(
+                        (a, b) =>
+                            (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)
+                    )
+                    .slice(0, 12);
+            });
+
+            if (acceptedSocketEventsCountRef.current === eventsCountAtStart) {
+                setUnreadCount(data.unreadCount);
+            }
         } catch {
             // Keep the last known state; the badge simply won't update.
         } finally {
-            setIsLoadingNotifications(false);
+            if (requestId === refreshRequestIdRef.current) {
+                setIsLoadingNotifications(false);
+            }
         }
     }, []);
 
     useEffect(() => {
         const socket = connectAdminSocket();
         setIsSocketConnected(socket.connected);
+        let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+        const clearRetryTimer = () => {
+            if (retryTimer) {
+                clearTimeout(retryTimer);
+                retryTimer = null;
+            }
+        };
 
         const handleConnect = () => {
+            clearRetryTimer();
             setIsSocketConnected(true);
             // Re-sync after a reconnect so events missed while offline appear.
             void refreshNotifications();
@@ -74,14 +124,33 @@ const AdminLayout = () => {
 
         const handleDisconnect = () => setIsSocketConnected(false);
 
-        const handleNotification = (notification: AdminNotification) => {
-            setNotifications((current) => {
-                if (current.some((item) => item._id === notification._id)) {
-                    return current;
-                }
+        const handleConnectError = (error: Error) => {
+            setIsSocketConnected(false);
+            clearRetryTimer();
 
-                return [notification, ...current].slice(0, 12);
-            });
+            // Retry only when the error is a Server error and the socket is inactive (e.g. not auto-reconnecting)
+            if (error.message === "Server error" && !socket.active) {
+                retryTimer = setTimeout(() => {
+                    retryTimer = null;
+                    if (!socket.connected) {
+                        socket.connect();
+                    }
+                }, 5000);
+            }
+        };
+
+        const handleNotification = (notification: AdminNotification) => {
+            if (!notification?._id || knownNotificationIdsRef.current.has(notification._id)) {
+                return;
+            }
+
+            knownNotificationIdsRef.current.add(notification._id);
+            acceptedSocketEventsCountRef.current += 1;
+
+            setNotifications((current) => [
+                notification,
+                ...current.filter((item) => item._id !== notification._id),
+            ].slice(0, 12));
 
             setUnreadCount((current) => current + 1);
 
@@ -92,13 +161,16 @@ const AdminLayout = () => {
 
         socket.on("connect", handleConnect);
         socket.on("disconnect", handleDisconnect);
+        socket.on("connect_error", handleConnectError);
         socket.on(ADMIN_NOTIFICATION_EVENT, handleNotification);
 
         void refreshNotifications();
 
         return () => {
+            clearRetryTimer();
             socket.off("connect", handleConnect);
             socket.off("disconnect", handleDisconnect);
+            socket.off("connect_error", handleConnectError);
             socket.off(ADMIN_NOTIFICATION_EVENT, handleNotification);
             disconnectAdminSocket();
         };

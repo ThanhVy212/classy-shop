@@ -52,7 +52,11 @@ const authenticateAdmin = async (socket, next) => {
 
     const user = await User.findById(session.userId).select("role");
 
-    if (!user || user.role !== "admin") {
+    if (!user) {
+      return next(new Error("Unauthorized"));
+    }
+
+    if (user.role !== "admin") {
       return next(new Error("Forbidden"));
     }
 
@@ -62,7 +66,7 @@ const authenticateAdmin = async (socket, next) => {
     return next();
   } catch (error) {
     console.error("Socket authentication error:", error);
-    return next(new Error("Unauthorized"));
+    return next(new Error("Server error"));
   }
 };
 

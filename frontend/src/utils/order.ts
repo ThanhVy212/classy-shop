@@ -106,7 +106,7 @@ export const getTrackingSteps = (
   const delivered = status === "Delivered" || isDelivered;
 
   const getStatusChangedAt = (target: OrderStatus) =>
-    context.statusHistory?.find((event) => event.status === target)?.changedAt ??
+    context.statusHistory?.findLast((event) => event.status === target)?.changedAt ??
     null;
 
   return [
