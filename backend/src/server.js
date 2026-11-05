@@ -12,6 +12,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import catalogRoutes from "./routes/catalogRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import adminOrderRoutes from "./routes/adminOrderRoutes.js";
+import adminNotificationRoutes from "./routes/adminNotificationRoutes.js";
 import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
 import discountRoutes from "./routes/discountRoutes.js";
 import adminDiscountRoutes from "./routes/adminDiscountRoutes.js";
@@ -21,6 +22,7 @@ import {
 } from "./middlewares/rateLimitMiddleware.js";
 import { syncCatalogFromProducts } from "./services/catalogService.js";
 import { ensureDefaultDiscountCodes } from "./services/discountService.js";
+import { initSocket } from "./config/socket.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -67,6 +69,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/catalog", catalogRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
+app.use("/api/admin/notifications", adminNotificationRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/discounts", discountRoutes);
 app.use("/api/admin/discounts", adminDiscountRoutes);
@@ -87,9 +90,11 @@ connectDB().then(async () => {
     console.error("Could not initialize discount codes:", error);
   }
 
-  app.listen(PORT, () => {
+  const httpServer = app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
   });
+
+  initSocket(httpServer);
 });
 
 export default app;

@@ -14,6 +14,7 @@ import {
   normalizeDiscountCode,
   recordDiscountUsage,
 } from "../services/discountService.js";
+import { createAdminNotification } from "../services/notificationService.js";
 
 const TAX_RATE = 0.08;
 const EXPRESS_SHIPPING_PRICE = 15;
@@ -371,6 +372,10 @@ export const createOrder = async (req, res) => {
       console.error("Could not clear cart after order:", cartError);
     }
 
+    // Let the admin team know a new order came in. This never throws, so a
+    // notification problem cannot fail an order that was already saved.
+    await createAdminNotification({ type: "order_created", order });
+
     let populatedOrder = null;
     try {
       populatedOrder = await Order.findById(order._id).populate(
@@ -558,6 +563,15 @@ export const cancelOrder = async (req, res) => {
     }
 
     await restoreStock(order);
+
+    // The customer-facing cancel route is used by shoppers, including accounts
+    // that also have the admin role. Admins cancelling from the admin panel use
+    // updateOrderStatus instead, so every cancellation here should notify.
+    await createAdminNotification({
+      type: "order_cancelled",
+      order: updatedOrder,
+      reason: cancelReason,
+    });
 
     return res.status(200).json({ order: updatedOrder });
   } catch (error) {

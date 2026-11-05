@@ -7,6 +7,17 @@ export const ORDER_STATUSES: OrderStatus[] = [
   "Cancelled",
 ];
 
+/**
+ * Customer-facing labels. The stored status values stay "Shipped"/"Delivered"
+ * so existing orders and API contracts keep working.
+ */
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  Processing: "Processing",
+  Shipped: "Shipping",
+  Delivered: "Received",
+  Cancelled: "Cancelled",
+};
+
 export const ORDER_STATUS_CLASSES: Record<OrderStatus, string> = {
   Processing: "bg-amber-50 text-amber-700 border-amber-200",
   Shipped: "bg-blue-50 text-blue-700 border-blue-200",
@@ -83,26 +94,49 @@ export const getShippingMethodLabel = (method: string) =>
 /** Timeline steps shown on the order details page. */
 export const getTrackingSteps = (
   status: OrderStatus,
-  isDelivered: boolean
+  isDelivered: boolean,
+  context: {
+    createdAt?: string | Date | null;
+    deliveredAt?: string | Date | null;
+    statusHistory?: { status: OrderStatus; changedAt: string | Date }[];
+  } = {}
 ) => {
   const cancelled = status === "Cancelled";
   const shipped = status === "Shipped" || status === "Delivered" || isDelivered;
   const delivered = status === "Delivered" || isDelivered;
 
+  const getStatusChangedAt = (target: OrderStatus) =>
+    context.statusHistory?.find((event) => event.status === target)?.changedAt ??
+    null;
+
   return [
-    { key: "placed", label: "Order placed", done: true, cancelled: false },
+    {
+      key: "placed",
+      label: "Order placed",
+      done: true,
+      cancelled: false,
+      completedAt: context.createdAt ?? null,
+    },
     {
       key: "processing",
       label: "Processing",
       done: !cancelled && (status === "Processing" || shipped),
       cancelled,
+      completedAt: getStatusChangedAt("Processing"),
     },
-    { key: "shipped", label: "Shipped", done: shipped && !cancelled, cancelled },
+    {
+      key: "shipped",
+      label: ORDER_STATUS_LABELS.Shipped,
+      done: shipped && !cancelled,
+      cancelled,
+      completedAt: getStatusChangedAt("Shipped"),
+    },
     {
       key: "delivered",
-      label: "Delivered",
+      label: ORDER_STATUS_LABELS.Delivered,
       done: delivered && !cancelled,
       cancelled,
+      completedAt: context.deliveredAt ?? getStatusChangedAt("Delivered"),
     },
   ];
 };

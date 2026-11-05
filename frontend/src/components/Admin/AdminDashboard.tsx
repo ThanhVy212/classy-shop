@@ -21,7 +21,7 @@ import Button from "../Common/Button.tsx";
 import { dashboardService } from "../../services/dashboardService";
 import type { DashboardResponse } from "../../types/dashboard";
 import type { Order, OrderStatus } from "../../types/order";
-import { formatMoney, formatOrderDate } from "../../utils/order";
+import { formatMoney, formatOrderDate, ORDER_STATUS_LABELS } from "../../utils/order";
 import { getApiErrorMessage } from "../../utils/apiError";
 
 type Trend = "up" | "down" | "neutral";
@@ -41,25 +41,29 @@ const getStatusBadge = (status: OrderStatus) => {
         case "Delivered":
             return (
                 <span className="status-badge status-badge-success">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Delivered
+                    <CheckCircle2 className="w-3.5 h-3.5" />{" "}
+                    {ORDER_STATUS_LABELS.Delivered}
                 </span>
             );
         case "Shipped":
             return (
                 <span className="status-badge status-badge-info">
-                    <Truck className="w-3.5 h-3.5" /> Shipped
+                    <Truck className="w-3.5 h-3.5" />{" "}
+                    {ORDER_STATUS_LABELS.Shipped}
                 </span>
             );
         case "Processing":
             return (
                 <span className="status-badge status-badge-warning">
-                    <Clock className="w-3.5 h-3.5" /> Processing
+                    <Clock className="w-3.5 h-3.5" />{" "}
+                    {ORDER_STATUS_LABELS.Processing}
                 </span>
             );
         case "Cancelled":
             return (
                 <span className="status-badge status-badge-danger">
-                    <XCircle className="w-3.5 h-3.5" /> Cancelled
+                    <XCircle className="w-3.5 h-3.5" />{" "}
+                    {ORDER_STATUS_LABELS.Cancelled}
                 </span>
             );
         default:

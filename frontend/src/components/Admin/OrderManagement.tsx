@@ -31,6 +31,7 @@ import {
   getOrderItemsCount,
   ORDER_STATUSES,
   ORDER_STATUS_CLASSES,
+  ORDER_STATUS_LABELS,
   PAYMENT_STATUS_META,
 } from "../../utils/order";
 import { getApiErrorMessage } from "../../utils/apiError";
@@ -158,7 +159,7 @@ const OrderManagement = () => {
       void loadStats();
       void loadOrders();
       toast.success(
-        `Order ${order.orderNumber} marked as ${updated.orderStatus}`
+        `Order ${order.orderNumber} marked as ${ORDER_STATUS_LABELS[updated.orderStatus]}`
       );
     } catch (updateError) {
       toast.error(
@@ -298,7 +299,7 @@ const OrderManagement = () => {
         <div className="admin-stat-pill">
           <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-ink-soft)]">
             <Truck className="h-3.5 w-3.5" />
-            Shipped
+            {ORDER_STATUS_LABELS.Shipped}
           </span>
           <p className="mt-1 text-xl font-bold text-blue-600">
             {statusCounts.Shipped}
@@ -308,7 +309,7 @@ const OrderManagement = () => {
         <div className="admin-stat-pill">
           <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-ink-soft)]">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Delivered
+            {ORDER_STATUS_LABELS.Delivered}
           </span>
           <p className="mt-1 text-xl font-bold text-emerald-600">
             {statusCounts.Delivered}
@@ -355,7 +356,7 @@ const OrderManagement = () => {
               <option value="all">All fulfilment</option>
               {ORDER_STATUSES.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {ORDER_STATUS_LABELS[status]}
                 </option>
               ))}
             </select>
@@ -573,7 +574,7 @@ const OrderManagement = () => {
                                 order.orderStatus !== "Processing"
                               }
                             >
-                              {status}
+                              {ORDER_STATUS_LABELS[status]}
                             </option>
                           ))}
                         </select>

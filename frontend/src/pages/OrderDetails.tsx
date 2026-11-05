@@ -28,12 +28,14 @@ import type {
 } from "../types/order.ts";
 import {
   formatMoney,
+  formatOrderDate,
   formatOrderDateTime,
   getOrderItemsCount,
   getPaymentMethodLabel,
   getShippingMethodLabel,
   getTrackingSteps,
   ORDER_STATUSES,
+  ORDER_STATUS_LABELS,
   ORDER_STATUS_CLASSES,
   PAYMENT_STATUS_META,
 } from "../utils/order.ts";
@@ -146,7 +148,9 @@ const OrderDetails = () => {
       setOrder(updated);
       setStatusDraft(updated.orderStatus);
       setPaymentDraft(updated.paymentStatus);
-      toast.success(`Fulfilment status updated to ${updated.orderStatus}`);
+      toast.success(
+        `Fulfilment status updated to ${ORDER_STATUS_LABELS[updated.orderStatus]}`
+      );
     } catch (updateError) {
       toast.error(
         getApiErrorMessage(updateError, "Could not update the order status.")
@@ -227,7 +231,11 @@ const OrderDetails = () => {
 
   const payment = PAYMENT_STATUS_META[order.paymentStatus];
   const itemsCount = getOrderItemsCount(order.orderItems);
-  const steps = getTrackingSteps(order.orderStatus, order.isDelivered);
+  const steps = getTrackingSteps(order.orderStatus, order.isDelivered, {
+    createdAt: order.createdAt,
+    deliveredAt: order.deliveredAt,
+    statusHistory: order.statusHistory,
+  });
   const canCustomerCancel =
     !isAdminView && order.orderStatus === "Processing";
   const isCancelled = order.orderStatus === "Cancelled";
@@ -301,7 +309,7 @@ const OrderDetails = () => {
                 <span
                   className={`status-badge ${ORDER_STATUS_CLASSES[order.orderStatus]}`}
                 >
-                  {order.orderStatus}
+                  {ORDER_STATUS_LABELS[order.orderStatus]}
                 </span>
                 <span className={`status-badge ${payment.className}`}>
                   {payment.label}
@@ -400,6 +408,11 @@ const OrderDetails = () => {
                           ? "Completed"
                           : "Pending"}
                     </span>
+                    {step.done && !step.cancelled && step.completedAt && (
+                      <span className="mt-1 text-[10px] font-medium text-[var(--color-ink-muted)]">
+                        {formatOrderDate(step.completedAt)}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -545,7 +558,7 @@ const OrderDetails = () => {
                       </p>
                     </div>
                     <span className="status-badge status-badge-neutral">
-                      {order.isDelivered ? "Delivered" : "In progress"}
+                      {order.isDelivered ? "Received" : "In progress"}
                     </span>
                   </div>
                 </div>
@@ -639,7 +652,7 @@ const OrderDetails = () => {
                             order.orderStatus !== "Processing"
                           }
                         >
-                          {status}
+                          {ORDER_STATUS_LABELS[status]}
                         </option>
                       ))}
                     </select>
@@ -785,7 +798,7 @@ const OrderDetails = () => {
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-[var(--color-ink)]">
-                        {event.status}
+                        {ORDER_STATUS_LABELS[event.status]}
                       </p>
                       <p className="text-[11px] text-[var(--color-ink-muted)]">
                         {formatOrderDateTime(event.changedAt)}

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
     BadgePercent,
+    Bell,
+    CheckCheck,
     LayoutDashboard,
     ShoppingBag,
     Package,
@@ -11,12 +13,20 @@ import {
     LogOut,
     Menu,
     X,
-    Bell
+    XCircle,
 } from "lucide-react";
 import logo from "../../assets/logo.svg";
 import { toast } from "sonner";
 import Button from "../Common/Button.tsx";
 import { useAuth } from "../../hooks/useAuth.ts";
+import { notificationService } from "../../services/notificationService.ts";
+import {
+    ADMIN_NOTIFICATION_EVENT,
+    connectAdminSocket,
+    disconnectAdminSocket,
+} from "../../services/socket.ts";
+import type { AdminNotification } from "../../types/notification.ts";
+import { formatRelativeTime } from "../../utils/notification.ts";
 
 const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,6 +41,136 @@ const AdminLayout = () => {
             .slice(0, 2)
             .map((part) => part.charAt(0).toUpperCase())
             .join("") || "AD";
+
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
+    const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
+    const [isSocketConnected, setIsSocketConnected] = useState(false);
+    const notificationsRef = useRef<HTMLDivElement | null>(null);
+
+    const refreshNotifications = useCallback(async () => {
+        try {
+            const data = await notificationService.getNotifications({ limit: 12 });
+            setNotifications(data.notifications);
+            setUnreadCount(data.unreadCount);
+        } catch {
+            // Keep the last known state; the badge simply won't update.
+        } finally {
+            setIsLoadingNotifications(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        const socket = connectAdminSocket();
+        setIsSocketConnected(socket.connected);
+
+        const handleConnect = () => {
+            setIsSocketConnected(true);
+            // Re-sync after a reconnect so events missed while offline appear.
+            void refreshNotifications();
+        };
+
+        const handleDisconnect = () => setIsSocketConnected(false);
+
+        const handleNotification = (notification: AdminNotification) => {
+            setNotifications((current) => {
+                if (current.some((item) => item._id === notification._id)) {
+                    return current;
+                }
+
+                return [notification, ...current].slice(0, 12);
+            });
+
+            setUnreadCount((current) => current + 1);
+
+            toast(notification.title, {
+                description: notification.message,
+            });
+        };
+
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
+        socket.on(ADMIN_NOTIFICATION_EVENT, handleNotification);
+
+        void refreshNotifications();
+
+        return () => {
+            socket.off("connect", handleConnect);
+            socket.off("disconnect", handleDisconnect);
+            socket.off(ADMIN_NOTIFICATION_EVENT, handleNotification);
+            disconnectAdminSocket();
+        };
+    }, [refreshNotifications]);
+
+    useEffect(() => {
+        if (!notificationsOpen) return;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (
+                notificationsRef.current &&
+                !notificationsRef.current.contains(event.target as Node)
+            ) {
+                setNotificationsOpen(false);
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setNotificationsOpen(false);
+        };
+
+        document.addEventListener("mousedown", handlePointerDown);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handlePointerDown);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [notificationsOpen]);
+
+    const handleToggleNotifications = () => {
+        const nextOpen = !notificationsOpen;
+        setNotificationsOpen(nextOpen);
+        if (nextOpen) void refreshNotifications();
+    };
+
+    const handleMarkAllRead = async () => {
+        if (unreadCount === 0 || isMarkingAllRead) return;
+
+        setIsMarkingAllRead(true);
+        try {
+            await notificationService.markAllAsRead();
+            setNotifications((current) =>
+                current.map((notification) => ({ ...notification, isRead: true }))
+            );
+            setUnreadCount(0);
+        } catch {
+            toast.error("Could not mark notifications as read.");
+        } finally {
+            setIsMarkingAllRead(false);
+        }
+    };
+
+    const handleNotificationClick = (notification: AdminNotification) => {
+        setNotificationsOpen(false);
+
+        if (!notification.isRead) {
+            setNotifications((current) =>
+                current.map((item) =>
+                    item._id === notification._id ? { ...item, isRead: true } : item
+                )
+            );
+            setUnreadCount((current) => Math.max(0, current - 1));
+
+            void notificationService
+                .markAsRead(notification._id)
+                .then((count) => setUnreadCount(count))
+                .catch(() => void refreshNotifications());
+        }
+
+        navigate(`/admin/orders/${notification.order}`);
+    };
 
     const navItems = [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard, end: true },
@@ -163,15 +303,164 @@ const AdminLayout = () => {
                             <span>Storefront</span>
                         </Link>
 
-                        <Button
-                            type="button"
-                            onClick={() => toast.info("No unread admin notifications")}
-                            className="p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition relative"
-                            aria-label="Notifications"
-                        >
-                            <Bell className="w-5 h-5" />
-                            <span className="w-2 h-2 rounded-full bg-red-600 absolute top-1.5 right-1.5" />
-                        </Button>
+                        <div className="relative" ref={notificationsRef}>
+                            <Button
+                                type="button"
+                                onClick={handleToggleNotifications}
+                                className="relative rounded-full p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                                aria-label={
+                                    unreadCount > 0
+                                        ? `Notifications, ${unreadCount} unread`
+                                        : "Notifications"
+                                }
+                                aria-haspopup="true"
+                                aria-expanded={notificationsOpen}
+                            >
+                                <Bell className="h-5 w-5" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                                        {unreadCount > 9 ? "9+" : unreadCount}
+                                    </span>
+                                )}
+                            </Button>
+
+                            {notificationsOpen && (
+                                <div className="absolute right-0 z-50 mt-2 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+                                    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900">
+                                                Notifications
+                                            </p>
+                                            <p className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                                                <span>
+                                                    {unreadCount > 0
+                                                        ? `${unreadCount} unread`
+                                                        : "You're all caught up"}
+                                                </span>
+                                                <span className="text-gray-300">·</span>
+                                                <span
+                                                    className={
+                                                        isSocketConnected
+                                                            ? "font-semibold text-emerald-600"
+                                                            : "font-semibold text-amber-600"
+                                                    }
+                                                >
+                                                    {isSocketConnected
+                                                        ? "Live"
+                                                        : "Reconnecting…"}
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            onClick={() => void handleMarkAllRead()}
+                                            disabled={unreadCount === 0 || isMarkingAllRead}
+                                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40"
+                                        >
+                                            <CheckCheck className="h-3.5 w-3.5" />
+                                            Mark all read
+                                        </Button>
+                                    </div>
+
+                                    <div className="better-scrollbar max-h-96 overflow-y-auto">
+                                        {isLoadingNotifications && notifications.length === 0 ? (
+                                            <div className="space-y-3 px-4 py-5">
+                                                {Array.from({ length: 3 }, (_, index) => (
+                                                    <div key={index} className="flex animate-pulse gap-3">
+                                                        <span className="h-9 w-9 shrink-0 rounded-full bg-gray-100" />
+                                                        <span className="flex-1 space-y-2">
+                                                            <span className="block h-2.5 w-2/3 rounded-full bg-gray-100" />
+                                                            <span className="block h-2 w-full rounded-full bg-gray-100" />
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : notifications.length === 0 ? (
+                                            <div className="px-5 py-10 text-center">
+                                                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                                                    <Bell className="h-5 w-5" />
+                                                </span>
+                                                <p className="mt-3 text-sm font-semibold text-gray-900">
+                                                    No notifications yet
+                                                </p>
+                                                <p className="mt-1 text-xs text-gray-500">
+                                                    New orders and customer cancellations will
+                                                    show up here.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="divide-y divide-gray-100">
+                                                {notifications.map((notification) => {
+                                                    const isCancellation =
+                                                        notification.type === "order_cancelled";
+
+                                                    return (
+                                                        <button
+                                                            key={notification._id}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handleNotificationClick(notification)
+                                                            }
+                                                            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-gray-50 ${
+                                                                notification.isRead
+                                                                    ? ""
+                                                                    : "bg-blue-50/50"
+                                                            }`}
+                                                        >
+                                                            <span
+                                                                className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                                                                    isCancellation
+                                                                        ? "bg-red-50 text-red-600"
+                                                                        : "bg-emerald-50 text-emerald-600"
+                                                                }`}
+                                                            >
+                                                                {isCancellation ? (
+                                                                    <XCircle className="h-4 w-4" />
+                                                                ) : (
+                                                                    <Package className="h-4 w-4" />
+                                                                )}
+                                                            </span>
+
+                                                            <span className="min-w-0 flex-1">
+                                                                <span className="flex items-start justify-between gap-2">
+                                                                    <span className="text-xs font-bold text-gray-900">
+                                                                        {notification.title}
+                                                                    </span>
+                                                                    <span className="shrink-0 text-[10px] text-gray-400">
+                                                                        {formatRelativeTime(
+                                                                            notification.createdAt
+                                                                        )}
+                                                                    </span>
+                                                                </span>
+                                                                <span className="mt-0.5 line-clamp-2 block text-[11px] leading-relaxed text-gray-600">
+                                                                    {notification.message}
+                                                                </span>
+                                                                <span className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                                                                    {notification.orderNumber}
+                                                                    {!notification.isRead && (
+                                                                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                                                                    )}
+                                                                </span>
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-2.5 text-center">
+                                        <Link
+                                            to="/admin/orders"
+                                            onClick={() => setNotificationsOpen(false)}
+                                            className="text-[11px] font-semibold text-gray-600 transition hover:text-gray-900"
+                                        >
+                                            View all orders
+                                        </Link>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <div className="flex items-center gap-2.5 pl-3 border-l border-gray-200">
                             {user?.avatarUrl ? (
