@@ -232,10 +232,23 @@ export const registerRateLimit = rateLimit({
   window: () => windowFromEnv("RATE_LIMIT_REGISTER_WINDOW", "1 h"),
 });
 
+// Keyed per refresh session instead of per IP. Several tabs (or several
+// users behind one NAT) share the same IP, and a quota keyed by IP runs out
+// long before any single session does. Hashing keeps the raw token out of
+// Redis keys; requests without a cookie fall back to the IP.
 export const refreshRateLimit = rateLimit({
   name: "refresh",
   max: () => intFromEnv("RATE_LIMIT_REFRESH_MAX", 60),
   window: () => windowFromEnv("RATE_LIMIT_REFRESH_WINDOW", "15 m"),
+  keyGenerator: (req) => {
+    const token = req.cookies?.refreshToken;
+
+    if (typeof token === "string" && token.trim()) {
+      return crypto.createHash("sha256").update(token.trim()).digest("hex");
+    }
+
+    return getClientIp(req);
+  },
 });
 
 export const uploadRateLimit = rateLimit({

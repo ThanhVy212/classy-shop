@@ -4,6 +4,13 @@ export interface ProductImage {
   _id?: string;
 }
 
+export interface ProductVariant {
+  size: string;
+  color: string;
+  stock: number;
+  sku?: string;
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -16,6 +23,7 @@ export interface Product {
   brand?: string;
   sizes: string[];
   colors: string[];
+  variants?: ProductVariant[];
   collections: string;
   material?: string;
   gender?: "Men" | "Women" | "Unisex" | string;

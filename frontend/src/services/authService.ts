@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { refreshAccessToken } from "./api";
 import type { LoginFormData, RegisterFormData } from "../validations/auth";
 import type { AuthResponse, AuthUser, ProfileResponse } from "../types/auth";
 import axios from "axios";
@@ -19,8 +19,8 @@ export const authService = {
   },
 
   async refreshToken(): Promise<{ accessToken: string }> {
-    const response = await api.post<{ accessToken: string }>("/auth/refresh");
-    return response.data;
+    const accessToken = await refreshAccessToken();
+    return { accessToken };
   },
 
   async getProfile(): Promise<ProfileResponse> {

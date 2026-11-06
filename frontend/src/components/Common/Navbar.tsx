@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { mainNavigationLinks } from "../../constants";
-import { UserRound, X, ShoppingCart, Menu } from "lucide-react";
+import { UserRound, X, ShoppingCart, Menu, Heart } from "lucide-react";
 import SearchBar from "./SearchBar.tsx";
 import CartDrawer from "../Layout/CartDrawer.tsx";
 import { useState } from "react";
@@ -9,10 +9,12 @@ import Button from "./Button.tsx";
 import logo from "../../assets/logo.svg";
 import { useAuth } from "../../hooks/useAuth.ts";
 import { useCart } from "../../hooks/useCart.ts";
+import { useWishlist } from "../../hooks/useWishlist.ts";
 
 const Navbar = () => {
     const { user, isAuthenticated } = useAuth();
     const { totalItems } = useCart();
+    const { count: wishlistCount } = useWishlist();
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [navDrawerOpen, setNavDrawerOpen] = useState(false);
 
@@ -63,6 +65,19 @@ const Navbar = () => {
                         {isAuthenticated && user?.name && (
                             <span className="text-sm font-medium text-[var(--color-ink-soft)] group-hover:text-[var(--color-primary)] transition-colors max-w-[90px] sm:max-w-[130px] md:max-w-[160px] truncate">
                                 {user.name}
+                            </span>
+                        )}
+                    </Link>
+
+                    <Link
+                        to="/wishlist"
+                        aria-label="Wishlist"
+                        className="relative inline-flex items-center transition-colors group"
+                    >
+                        <Heart className="h-5 w-5 text-[var(--color-ink-soft)] group-hover:text-[var(--color-primary)] transition-colors" />
+                        {wishlistCount > 0 && (
+                            <span className="badge-red absolute -top-1 -right-2">
+                                {wishlistCount > 99 ? "99+" : wishlistCount}
                             </span>
                         )}
                     </Link>
@@ -125,6 +140,15 @@ const Navbar = () => {
                                 </nav>
 
                                 <div className="pt-6 mt-6 border-t border-[var(--color-border)]">
+                                    <Link
+                                        to="/wishlist"
+                                        onClick={toggleNavDrawer}
+                                        className="flex items-center gap-2.5 text-[var(--color-ink-soft)] hover:text-[var(--color-primary)] font-medium text-sm transition-colors py-1 mb-2"
+                                    >
+                                        <Heart className="h-5 w-5 text-[var(--color-ink-soft)] shrink-0" />
+                                        <span>Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ""}</span>
+                                    </Link>
+
                                     {isAuthenticated && user ? (
                                         <Link
                                             to="/profile"

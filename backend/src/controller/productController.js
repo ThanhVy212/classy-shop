@@ -2,6 +2,22 @@ import mongoose from "mongoose";
 import Product from "../models/Product.js";
 import { validateObjectId } from "../middlewares/validate.js";
 import { ensureCatalogItems } from "../services/catalogService.js";
+import {
+  normalizeVariants,
+  sumVariantStock,
+} from "../services/variantService.js";
+
+const normalizeStringList = (values) => {
+  if (!Array.isArray(values)) return [];
+
+  return Array.from(
+    new Set(
+      values
+        .map((value) => String(value ?? "").trim())
+        .filter(Boolean),
+    ),
+  );
+};
 
 const syncProductCatalog = async (product) => {
   try {
@@ -134,18 +150,30 @@ export const createProduct = async (req, res) => {
       dimensions,
       weight,
       sku,
+      variants,
     } = req.body;
+
+    const normalizedSizes = normalizeStringList(sizes);
+    const normalizedColors = normalizeStringList(colors);
+    const normalizedVariants = normalizeVariants(
+      variants ?? [],
+      normalizedSizes,
+      normalizedColors,
+    );
 
     const product = new Product({
       name,
       description,
       price,
       discountPrice,
-      countInStock,
+      countInStock: normalizedVariants.length
+        ? sumVariantStock(normalizedVariants)
+        : countInStock,
       category,
       brand,
-      sizes,
-      colors,
+      sizes: normalizedSizes,
+      colors: normalizedColors,
+      variants: normalizedVariants,
       collections,
       material,
       gender,
@@ -163,6 +191,10 @@ export const createProduct = async (req, res) => {
     await syncProductCatalog(createdProduct);
     res.status(201).json(createdProduct);
   } catch (e) {
+    if (e?.status === 400) {
+      return res.status(400).json({ message: e.message });
+    }
+
     console.error(e);
     res.status(500).json({ message: "Server error" });
   }
@@ -190,6 +222,7 @@ export const updateProduct = async (req, res) => {
       dimensions,
       weight,
       sku,
+      variants,
     } = req.body;
 
     // Find product by ID
@@ -202,16 +235,24 @@ export const updateProduct = async (req, res) => {
       });
     }
 
+    const nextSizes =
+      sizes !== undefined ? normalizeStringList(sizes) : product.sizes;
+    const nextColors =
+      colors !== undefined ? normalizeStringList(colors) : product.colors;
+    const nextVariants =
+      variants !== undefined
+        ? normalizeVariants(variants, nextSizes, nextColors)
+        : undefined;
+
     // Update product fields
     product.name = name ?? product.name;
     product.description = description ?? product.description;
     product.price = price ?? product.price;
     product.discountPrice = discountPrice ?? product.discountPrice;
-    product.countInStock = countInStock ?? product.countInStock;
     product.category = category ?? product.category;
     product.brand = brand ?? product.brand;
-    product.sizes = sizes ?? product.sizes;
-    product.colors = colors ?? product.colors;
+    product.sizes = nextSizes;
+    product.colors = nextColors;
     product.collections = collections ?? product.collections;
     product.material = material ?? product.material;
     product.gender = gender ?? product.gender;
@@ -223,6 +264,15 @@ export const updateProduct = async (req, res) => {
     product.weight = weight ?? product.weight;
     product.sku = sku ?? product.sku;
 
+    if (nextVariants !== undefined) {
+      product.variants = nextVariants;
+      product.countInStock = nextVariants.length
+        ? sumVariantStock(nextVariants)
+        : (countInStock ?? product.countInStock);
+    } else {
+      product.countInStock = countInStock ?? product.countInStock;
+    }
+
     // Save updated product
     const updatedProduct = await product.save();
     await syncProductCatalog(updatedProduct);
@@ -232,6 +282,10 @@ export const updateProduct = async (req, res) => {
       product: updatedProduct,
     });
   } catch (error) {
+    if (error?.status === 400) {
+      return res.status(400).json({ message: error.message });
+    }
+
     console.error("Update product error:", error);
     return res.status(500).json({
       message: "Server error",

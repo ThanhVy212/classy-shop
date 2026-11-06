@@ -4,11 +4,18 @@ import { toast } from "sonner";
 import Button from "../Common/Button.tsx";
 import ProductGrid from "./ProductGrid.tsx";
 import ProductImageZoom from "./ProductImageZoom.tsx";
+import WishlistButton from "./WishlistButton.tsx";
 import { productService } from "../../services/productService.ts";
 import { useCart } from "../../hooks/useCart.ts";
 import type { Product } from "../../types/product.ts";
 import { sampleSelectedProduct } from "../../constants";
 import { getColorStyle } from "../../utils/colors.ts";
+import {
+  findFirstInStockVariant,
+  getAvailableStock,
+  hasVariants,
+  isProductSoldOut,
+} from "../../utils/variants.ts";
 
 interface ProductDetailsProps {
   productId?: string;
@@ -47,12 +54,23 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
           const firstImg =
             loadedProduct.images?.[0]?.url || loadedProduct.image || "";
           setMainImage(firstImg);
-          if (loadedProduct.sizes?.length) {
-            setSelectedSize(loadedProduct.sizes[0]);
+
+          // Start on an in-stock combination so the shopper does not land on
+          // a sold-out size/color that disables the add-to-cart button.
+          const initialVariant = findFirstInStockVariant(loadedProduct);
+
+          if (initialVariant) {
+            setSelectedSize(initialVariant.size);
+            setSelectedColor(initialVariant.color);
+          } else {
+            if (loadedProduct.sizes?.length) {
+              setSelectedSize(loadedProduct.sizes[0]);
+            }
+            if (loadedProduct.colors?.length) {
+              setSelectedColor(loadedProduct.colors[0]);
+            }
           }
-          if (loadedProduct.colors?.length) {
-            setSelectedColor(loadedProduct.colors[0]);
-          }
+          setQuantity(1);
 
           // Fetch similar products
           try {
@@ -100,7 +118,13 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
   }, [targetId]);
 
   const handleQuantityChange = (action: "plus" | "minus") => {
-    if (action === "plus") setQuantity((prev) => prev + 1);
+    if (action === "plus") {
+      const available = product
+        ? getAvailableStock(product, selectedSize, selectedColor)
+        : 0;
+
+      setQuantity((prev) => Math.min(prev + 1, Math.max(1, available)));
+    }
     if (action === "minus" && quantity > 1) setQuantity((prev) => prev - 1);
   };
 
@@ -109,6 +133,22 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
 
     if (!selectedSize || !selectedColor) {
       toast.error("Please select a size and color before adding to cart.", {
+        duration: 2000,
+      });
+      return;
+    }
+
+    const available = getAvailableStock(product, selectedSize, selectedColor);
+
+    if (available <= 0) {
+      toast.error("This size and color combination is out of stock.", {
+        duration: 2000,
+      });
+      return;
+    }
+
+    if (quantity > available) {
+      toast.error(`Only ${available} left in this combination.`, {
         duration: 2000,
       });
       return;
@@ -170,6 +210,16 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
     product.discountPrice !== undefined &&
     product.discountPrice > 0 &&
     product.discountPrice < product.price;
+
+  const availableStock = getAvailableStock(
+    product,
+    selectedSize,
+    selectedColor,
+  );
+  const soldOut = isProductSoldOut(product);
+  const usesVariants = hasVariants(product);
+  const isCombinationSoldOut =
+    Boolean(selectedSize && selectedColor) && availableStock <= 0;
 
   return (
     <div className="bg-[var(--color-canvas)] px-4 py-8 sm:px-6 sm:py-10">
@@ -258,19 +308,40 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                   </span>
                 </p>
                 <div className="flex gap-2.5 mt-2">
-                  {product.colors.map((color) => (
-                    <Button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      aria-label={`Select color ${color}`}
-                      className={`w-8 h-8 rounded-full border border-[var(--color-border-strong)] transition-all duration-200 ease-in-out cursor-pointer ${
-                        selectedColor === color
-                          ? "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-105"
-                          : "hover:scale-105"
-                      }`}
-                      style={getColorStyle(color)}
-                    />
-                  ))}
+                  {product.colors.map((color) => {
+                    // A color is only selectable when the currently selected
+                    // size has stock in it. The swatch keeps its real color and
+                    // gets a diagonal strike instead of being greyed out.
+                    const colorAvailable =
+                      getAvailableStock(product, selectedSize, color) > 0;
+
+                    return (
+                      <Button
+                        key={color}
+                        onClick={() => {
+                          setSelectedColor(color);
+                          setQuantity(1);
+                        }}
+                        disabled={!colorAvailable}
+                        title={
+                          colorAvailable
+                            ? `Select color ${color}`
+                            : `${color} is out of stock in size ${selectedSize}`
+                        }
+                        aria-label={`Select color ${color}`}
+                        className={`relative w-8 h-8 rounded-full border border-[var(--color-border-strong)] transition-all duration-200 ease-in-out ${
+                          selectedColor === color
+                            ? "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-105"
+                            : "hover:scale-105"
+                        } ${colorAvailable ? "cursor-pointer" : "cursor-not-allowed"}`}
+                        style={getColorStyle(color)}
+                      >
+                        {!colorAvailable && (
+                          <span className="pointer-events-none absolute left-1/2 top-1/2 h-[2px] w-8 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-[var(--color-danger)] shadow-[0_0_0_1px_rgba(255,255,255,0.9)]" />
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -285,18 +356,36 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                   </span>
                 </p>
                 <div className="flex gap-2 mt-2 flex-wrap">
-                  {product.sizes.map((size) => (
-                    <Button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`min-w-[3rem] px-4 py-2 rounded-xl border font-medium text-sm transition-all duration-200 cursor-pointer ${
-                        selectedSize === size
-                          ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm scale-105"
-                          : "bg-transparent text-[var(--color-ink)] border-[var(--color-border-strong)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)]"
-                      }`}>
-                      {size}
-                    </Button>
-                  ))}
+                  {product.sizes.map((size) => {
+                    const sizeAvailable =
+                      getAvailableStock(product, size, selectedColor) > 0;
+
+                    return (
+                      <Button
+                        key={size}
+                        onClick={() => {
+                          setSelectedSize(size);
+                          setQuantity(1);
+                        }}
+                        disabled={!sizeAvailable}
+                        title={
+                          sizeAvailable
+                            ? `Select size ${size}`
+                            : `Size ${size} is out of stock in ${selectedColor}`
+                        }
+                        className={`min-w-[3rem] px-4 py-2 rounded-xl border font-medium text-sm transition-all duration-200 ${
+                          selectedSize === size
+                            ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm scale-105"
+                            : "bg-transparent text-[var(--color-ink)] border-[var(--color-border-strong)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)]"
+                        } ${
+                          sizeAvailable
+                            ? "cursor-pointer"
+                            : "cursor-not-allowed opacity-40 line-through"
+                        }`}>
+                        {size}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -307,6 +396,7 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
               <div className="flex items-center space-x-4">
                 <Button
                   onClick={() => handleQuantityChange("minus")}
+                  disabled={quantity <= 1}
                   className="btn-qty"
                   aria-label="Decrease quantity">
                   -
@@ -316,23 +406,55 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                 </span>
                 <Button
                   onClick={() => handleQuantityChange("plus")}
+                  disabled={availableStock <= 0 || quantity >= availableStock}
                   className="btn-qty"
                   aria-label="Increase quantity">
                   +
                 </Button>
               </div>
+
+              {usesVariants ? (
+                <p
+                  className={`mt-2 text-xs font-medium ${
+                    isCombinationSoldOut
+                      ? "text-[var(--color-danger)]"
+                      : "text-[var(--color-ink-muted)]"
+                  }`}>
+                  {!selectedSize || !selectedColor
+                    ? "Select a size and color to see availability."
+                    : isCombinationSoldOut
+                      ? "This size and color combination is sold out."
+                      : `${availableStock} available in this combination`}
+                </p>
+              ) : soldOut ? (
+                <p className="mt-2 text-xs font-medium text-[var(--color-danger)]">
+                  Out of stock
+                </p>
+              ) : availableStock <= 5 ? (
+                <p className="mt-2 text-xs font-medium text-[var(--color-danger)]">
+                  Only {availableStock} left in stock
+                </p>
+              ) : null}
             </div>
 
-            <Button
-              onClick={handleAddToCart}
-              disabled={isAddingToCart}
-              className={`btn-black py-3.5 px-6 rounded-2xl w-full mb-4 font-semibold text-sm tracking-wide uppercase transition-all ${
-                isAddingToCart
-                  ? "opacity-60 cursor-not-allowed"
-                  : "cursor-pointer"
-              }`}>
-              {isAddingToCart ? "Adding to cart..." : "Add to cart"}
-            </Button>
+            <div className="mb-4 flex items-stretch gap-3">
+              <Button
+                onClick={handleAddToCart}
+                disabled={isAddingToCart || soldOut || isCombinationSoldOut}
+                className={`btn-black flex-1 py-3.5 px-6 rounded-2xl font-semibold text-sm tracking-wide uppercase transition-all ${
+                  isAddingToCart || soldOut || isCombinationSoldOut
+                    ? "opacity-60 cursor-not-allowed"
+                    : "cursor-pointer"
+                }`}>
+                {soldOut || isCombinationSoldOut
+                  ? "Out of stock"
+                  : isAddingToCart
+                    ? "Adding to cart..."
+                    : "Add to cart"}
+              </Button>
+
+              <WishlistButton product={product} size="lg" className="rounded-2xl" />
+            </div>
 
             {/* Characteristics */}
             {(product.brand || product.material) && (

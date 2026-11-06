@@ -4,6 +4,13 @@ type ProductImage = {
     _id?: string;
 };
 
+type ProductVariant = {
+    size: string;
+    color: string;
+    stock: number;
+    sku?: string;
+};
+
 type Product = {
     _id?: string;
     productId?: number | string;
@@ -17,6 +24,7 @@ type Product = {
     brand?: string;
     sizes?: string[];
     colors?: string[];
+    variants?: ProductVariant[];
     collections?: string;
     material?: string;
     gender?: string;

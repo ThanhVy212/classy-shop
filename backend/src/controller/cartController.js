@@ -1,5 +1,10 @@
 import Product from "../models/Product.js";
 import Cart from "../models/Cart.js";
+import {
+  findVariant,
+  getAvailableStock,
+  hasVariants,
+} from "../services/variantService.js";
 
 const getCart = async (userId, guestId) => {
   if (userId) {
@@ -11,13 +16,52 @@ const getCart = async (userId, guestId) => {
   return null;
 };
 
+const parseQuantity = (value) => {
+  const quantity = Math.floor(Number(value));
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : null;
+};
+
+/**
+ * Message used when a size/color combination cannot cover the requested
+ * quantity. Variant products describe the specific combination so the shopper
+ * knows which size or color is short.
+ */
+const buildStockMessage = (product, size, color, available) => {
+  const variantLabel =
+    size || color
+      ? ` in ${[size, color].filter(Boolean).join(" / ")}`
+      : "";
+
+  if (available <= 0) {
+    return hasVariants(product)
+      ? `${product.name}${variantLabel} is out of stock.`
+      : `${product.name} is out of stock.`;
+  }
+
+  return `${product.name}${variantLabel} only has ${available} left in stock.`;
+};
+
 export const addCartItem = async (req, res) => {
   try {
     const userId = req.user ? req.user._id : null;
-    const { productId, quantity, size, color, guestId } = req.body;
+    const { productId, quantity: rawQuantity, size, color, guestId } = req.body;
+
+    const quantity = parseQuantity(rawQuantity);
+
+    if (!quantity) {
+      return res.status(400).json({ message: "Invalid quantity." });
+    }
 
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ message: "Product not found" });
+
+    const available = getAvailableStock(product, size, color);
+
+    if (hasVariants(product) && !findVariant(product, size, color)) {
+      return res.status(400).json({
+        message: `This combination is not available for ${product.name}.`,
+      });
+    }
 
     // Determine if the user is logged in or guest
     let cart = await getCart(userId, guestId);
@@ -31,15 +75,25 @@ export const addCartItem = async (req, res) => {
           p.color === color,
       );
 
+      const existingQuantity =
+        productIndex > -1 ? Number(cart.products[productIndex].quantity) || 0 : 0;
+      const nextQuantity = existingQuantity + quantity;
+
+      if (nextQuantity > available) {
+        return res.status(409).json({
+          message: buildStockMessage(product, size, color, available),
+        });
+      }
+
       if (productIndex > -1) {
         // If the product already exists, update the quantity
-        cart.products[productIndex].quantity += quantity;
+        cart.products[productIndex].quantity = nextQuantity;
       } else {
         // add new product
         cart.products.push({
           productId,
           name: product.name,
-          image: product.images[0].url,
+          image: product.images?.[0]?.url || "",
           price: product.price,
           size,
           color,
@@ -56,6 +110,12 @@ export const addCartItem = async (req, res) => {
       await cart.save();
       return res.status(200).json(cart);
     } else {
+      if (quantity > available) {
+        return res.status(409).json({
+          message: buildStockMessage(product, size, color, available),
+        });
+      }
+
       // Create a new cart for the guest or user
       const newCart = await Cart.create({
         user: userId ? userId : undefined,
@@ -66,7 +126,7 @@ export const addCartItem = async (req, res) => {
           {
             productId,
             name: product.name,
-            image: product.images[0].url,
+            image: product.images?.[0]?.url || "",
             price: product.price,
             size,
             color,
@@ -88,10 +148,16 @@ export const addCartItem = async (req, res) => {
 export const updateCartItem = async (req, res) => {
   try {
     const userId = req.user ? req.user._id : null;
-    const { productId, quantity, size, color, guestId } = req.body;
+    const { productId, quantity: rawQuantity, size, color, guestId } = req.body;
 
     if (!userId && !guestId) {
       return res.status(400).json({ message: "UserId or guestId is required" });
+    }
+
+    const quantity = Math.floor(Number(rawQuantity));
+
+    if (!Number.isFinite(quantity)) {
+      return res.status(400).json({ message: "Invalid quantity." });
     }
 
     let cart = await getCart(userId, guestId);
@@ -107,6 +173,26 @@ export const updateCartItem = async (req, res) => {
     if (productIndex > -1) {
       // update quantity
       if (quantity > 0) {
+        const product = await Product.findById(productId);
+
+        if (!product) {
+          return res.status(404).json({ message: "Product not found" });
+        }
+
+        const available = getAvailableStock(product, size, color);
+
+        if (hasVariants(product) && !findVariant(product, size, color)) {
+          return res.status(400).json({
+            message: `This combination is not available for ${product.name}.`,
+          });
+        }
+
+        if (quantity > available) {
+          return res.status(409).json({
+            message: buildStockMessage(product, size, color, available),
+          });
+        }
+
         cart.products[productIndex].quantity = quantity;
       } else {
         cart.products.splice(productIndex, 1); // Remove product if quantity is 0
