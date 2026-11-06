@@ -1,9 +1,17 @@
 node_modules/
-.env
-.env.*
+backend/.env
+backend/.env.*
+*.local
+.env.local
+.env.*.local
 jsconfig.json
 
-# REACT
+# Cho phep frontend env public de Vercel/Vite tu nhan dien moi truong
+!frontend/.env.production
+!frontend/.env.development
+!frontend/.env.example
+!*.example
+
 # Logs
 logs
 *.log
@@ -13,10 +21,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
 dist
 dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*

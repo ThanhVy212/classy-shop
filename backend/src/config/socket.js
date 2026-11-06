@@ -73,34 +73,45 @@ const authenticateAdmin = async (socket, next) => {
 export const initSocket = (httpServer) => {
   if (io) return io;
 
-  const allowedOrigin = (process.env.CLIENT_URL || "").replace(/\/+$/, "");
+  const rawClientUrls = process.env.CLIENT_URL || "http://localhost:5173";
+  const allowedOrigins = rawClientUrls
+    .split(",")
+    .map((url) => url.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+  const checkOrigin = (origin) => {
+    if (!origin) return true;
+    const cleanOrigin = origin.replace(/\/+$/, "");
+    if (allowedOrigins.includes(cleanOrigin)) return true;
+    if (
+      process.env.NODE_ENV !== "production" &&
+      (cleanOrigin.includes("localhost") || cleanOrigin.includes("127.0.0.1"))
+    ) {
+      return true;
+    }
+    return false;
+  };
 
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL,
+      origin: (origin, callback) => {
+        if (checkOrigin(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error(`Socket CORS blocked: ${origin}`));
+      },
       credentials: true,
     },
-    // CORS does not protect WebSocket upgrades, so validate the Origin for
-    // browser clients as well. Non-browser clients have no Origin header but
-    // still need a valid refresh cookie below.
     allowRequest: (req, callback) => {
       const origin = req.headers.origin;
-
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      return callback(null, origin.replace(/\/+$/, "") === allowedOrigin);
+      return callback(null, checkOrigin(origin));
     },
   });
 
   io.use(authenticateAdmin);
 
   io.on("connection", (socket) => {
-    // Every admin receives team-wide notifications.
     socket.join(ADMIN_ROOM);
-    // A personal room is useful for future per-admin events (read state,
-    // multi-tab sync, ...).
     socket.join(`admin:${socket.data.userId}`);
   });
 

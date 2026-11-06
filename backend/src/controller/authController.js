@@ -20,7 +20,7 @@ const isProduction = process.env.NODE_ENV === "production";
 const refreshCookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: "lax",
+  sameSite: isProduction ? "none" : "lax",
   path: "/",
   maxAge: REFRESH_TOKEN_TTL,
 };
@@ -28,14 +28,14 @@ const refreshCookieOptions = {
 const clearCookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: "lax",
+  sameSite: isProduction ? "none" : "lax",
   path: "/",
 };
 
 const oauthStateCookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: "lax",
+  sameSite: isProduction ? "none" : "lax",
   path: "/api/auth",
   maxAge: OAUTH_STATE_TTL,
 };
@@ -43,7 +43,7 @@ const oauthStateCookieOptions = {
 const oauthStateClearOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: "lax",
+  sameSite: isProduction ? "none" : "lax",
   path: "/api/auth",
 };
 
