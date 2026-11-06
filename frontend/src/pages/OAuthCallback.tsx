@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -34,6 +34,8 @@ const formatWait = (seconds: number) => {
 
 const OAuthCallback = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const tokenFromUrl = searchParams.get("token");
     const { completeOAuthLogin } = useAuth();
     const [error, setError] = useState<string | null>(null);
     const [retryIn, setRetryIn] = useState<number | null>(null);
@@ -45,7 +47,7 @@ const OAuthCallback = () => {
 
         const finishLogin = async () => {
             try {
-                const user = await completeOAuthLogin();
+                const user = await completeOAuthLogin(tokenFromUrl);
                 if (!isMounted) return;
 
                 toast.success(`Welcome, ${user.name}!`);
@@ -90,7 +92,7 @@ const OAuthCallback = () => {
         return () => {
             isMounted = false;
         };
-    }, [attempt, completeOAuthLogin, navigate]);
+    }, [attempt, completeOAuthLogin, navigate, tokenFromUrl]);
 
     // Count down to the next automatic attempt, then bump `attempt` so the
     // effect above runs the login again.

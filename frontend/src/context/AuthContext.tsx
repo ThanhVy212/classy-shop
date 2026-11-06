@@ -83,16 +83,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return response;
   }, []);
 
-  const completeOAuthLogin = useCallback(async (): Promise<AuthUser> => {
-    // The Google callback sets the httpOnly refresh cookie and redirects back
-    // here, so restore the in-memory access token exactly like a page reload.
-    const refreshRes = await authService.refreshToken();
-    if (!refreshRes?.accessToken) {
-      throw new Error("Unable to restore your session.");
+    const completeOAuthLogin = useCallback(async (tokenFromUrl?: string | null): Promise<AuthUser> => {
+    let activeToken = tokenFromUrl;
+
+    if (!activeToken) {
+      const refreshRes = await authService.refreshToken();
+      if (!refreshRes?.accessToken) {
+        throw new Error("Unable to restore your session.");
+      }
+      activeToken = refreshRes.accessToken;
     }
 
-    setAccessToken(refreshRes.accessToken);
-    setToken(refreshRes.accessToken);
+    setAccessToken(activeToken);
+    setToken(activeToken);
 
     const profile = await authService.getProfile();
     if (!profile?.user) {

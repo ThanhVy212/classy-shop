@@ -10,7 +10,7 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (data: LoginFormData) => Promise<AuthResponse>;
   register: (data: RegisterFormData) => Promise<AuthResponse>;
-  completeOAuthLogin: () => Promise<AuthUser>;
+  completeOAuthLogin: (tokenFromUrl?: string | null) => Promise<AuthUser>;
   logout: () => Promise<void>;
   setUser: React.Dispatch<React.SetStateAction<AuthUser | null>>;
 }

@@ -15,12 +15,16 @@ const OAUTH_STATE_COOKIE = "oauthState";
 const OAUTH_STATE_TTL = 10 * 60 * 1000;
 const GOOGLE_REQUEST_TIMEOUT_MS = 10_000;
 
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction =
+  process.env.NODE_ENV === "production" ||
+  Boolean(process.env.RENDER) ||
+  Boolean(process.env.CLIENT_URL && process.env.CLIENT_URL.startsWith("https://"));
 
 const refreshCookieOptions = {
   httpOnly: true,
   secure: isProduction,
   sameSite: isProduction ? "none" : "lax",
+  partitioned: isProduction,
   path: "/",
   maxAge: REFRESH_TOKEN_TTL,
 };
@@ -407,10 +411,10 @@ export const googleCallback = async (req, res) => {
       }
     }
 
-    const { refreshToken } = await createAuthSession(user);
+        const { token, refreshToken } = await createAuthSession(user);
     res.cookie("refreshToken", refreshToken, refreshCookieOptions);
 
-    return redirectToClient(res, "/oauth/callback");
+    return redirectToClient(res, `/oauth/callback?token=${encodeURIComponent(token)}`);
   } catch (e) {
     console.error("Google callback error:", e);
     return redirectToClient(res, "/login?oauth=error&reason=server_error");
