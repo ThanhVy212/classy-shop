@@ -14,7 +14,9 @@ import {
   findFirstInStockVariant,
   getAvailableStock,
   hasVariants,
+  isColorAvailable,
   isProductSoldOut,
+  isSizeAvailable,
 } from "../../utils/variants.ts";
 
 interface ProductDetailsProps {
@@ -309,12 +311,8 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                 </p>
                 <div className="flex gap-2.5 mt-2">
                   {product.colors.map((color) => {
-                    // A color is only selectable when the currently selected
-                    // size has stock in it. The swatch keeps its real color and
-                    // gets a diagonal strike instead of being greyed out.
-                    const colorAvailable =
-                      getAvailableStock(product, selectedSize, color) > 0;
-
+                    // Disabled only when this color has no stock in any size.
+                    const colorHasAnyStock = isColorAvailable(product, color);
                     return (
                       <Button
                         key={color}
@@ -322,21 +320,22 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                           setSelectedColor(color);
                           setQuantity(1);
                         }}
-                        disabled={!colorAvailable}
+                        disabled={!colorHasAnyStock}
                         title={
-                          colorAvailable
+                          colorHasAnyStock
                             ? `Select color ${color}`
-                            : `${color} is out of stock in size ${selectedSize}`
+                            : `${color} is out of stock`
                         }
+
                         aria-label={`Select color ${color}`}
                         className={`relative w-8 h-8 rounded-full border border-[var(--color-border-strong)] transition-all duration-200 ease-in-out ${
                           selectedColor === color
                             ? "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-105"
                             : "hover:scale-105"
-                        } ${colorAvailable ? "cursor-pointer" : "cursor-not-allowed"}`}
+                        } ${colorHasAnyStock ? "cursor-pointer" : "cursor-not-allowed"}`}
                         style={getColorStyle(color)}
                       >
-                        {!colorAvailable && (
+                        {!colorHasAnyStock && (
                           <span className="pointer-events-none absolute left-1/2 top-1/2 h-[2px] w-8 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-[var(--color-danger)] shadow-[0_0_0_1px_rgba(255,255,255,0.9)]" />
                         )}
                       </Button>
@@ -357,9 +356,8 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                 </p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {product.sizes.map((size) => {
-                    const sizeAvailable =
-                      getAvailableStock(product, size, selectedColor) > 0;
-
+                    // Disabled only when this size has no stock in any color.
+                    const sizeHasAnyStock = isSizeAvailable(product, size);
                     return (
                       <Button
                         key={size}
@@ -367,18 +365,19 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                           setSelectedSize(size);
                           setQuantity(1);
                         }}
-                        disabled={!sizeAvailable}
+                        disabled={!sizeHasAnyStock}
                         title={
-                          sizeAvailable
+                          sizeHasAnyStock
                             ? `Select size ${size}`
-                            : `Size ${size} is out of stock in ${selectedColor}`
+                            : `Size ${size} is out of stock`
                         }
+
                         className={`min-w-[3rem] px-4 py-2 rounded-xl border font-medium text-sm transition-all duration-200 ${
                           selectedSize === size
                             ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm scale-105"
                             : "bg-transparent text-[var(--color-ink)] border-[var(--color-border-strong)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)]"
                         } ${
-                          sizeAvailable
+                          sizeHasAnyStock
                             ? "cursor-pointer"
                             : "cursor-not-allowed opacity-40 line-through"
                         }`}>
@@ -422,9 +421,7 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                   }`}>
                   {!selectedSize || !selectedColor
                     ? "Select a size and color to see availability."
-                    : isCombinationSoldOut
-                      ? "This size and color combination is sold out."
-                      : `${availableStock} available in this combination`}
+                    : `${availableStock} available in this combination`}
                 </p>
               ) : soldOut ? (
                 <p className="mt-2 text-xs font-medium text-[var(--color-danger)]">

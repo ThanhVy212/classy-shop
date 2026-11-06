@@ -291,7 +291,11 @@ export const createOrder = async (req, res) => {
           ? ` in ${[size, color].filter(Boolean).join(" / ")}`
           : "";
 
-      if (hasVariants(product) && !findVariant(product, size, color)) {
+      const matchedVariant = hasVariants(product)
+        ? findVariant(product, size, color)
+        : null;
+
+      if (hasVariants(product) && !matchedVariant) {
         return res.status(400).json({
           message: `${product.name}${variantLabel} is no longer available.`,
         });
@@ -308,14 +312,21 @@ export const createOrder = async (req, res) => {
         });
       }
 
+      // Use the canonical size/color from the matched variant so the stored
+      // values are identical to what reserveItemStock and incrementItemStock
+      // use when querying the variants array. Fall back to the cart values for
+      // non-variant products.
+      const canonicalSize = matchedVariant ? matchedVariant.size : size;
+      const canonicalColor = matchedVariant ? matchedVariant.color : color;
+
       orderItems.push({
         productId: product._id,
         name: product.name,
         image: product.images?.[0]?.url || cartItem.image || "",
         price: getEffectivePrice(product),
         quantity,
-        size,
-        color,
+        size: canonicalSize,
+        color: canonicalColor,
       });
     }
 
@@ -423,7 +434,7 @@ export const createOrder = async (req, res) => {
         {
           status: "pending",
           changedAt: now,
-          note: "Cash on delivery — payment collected on delivery",
+          note: "Cash on delivery â€” payment collected on delivery",
         },
       ],
     });
