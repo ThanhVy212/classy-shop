@@ -59,7 +59,6 @@ export const isOriginAllowed = (origin) => {
   if (!origin) return true;
   const cleanOrigin = origin.replace(/\/+$/, "");
   if (allowedOrigins.includes(cleanOrigin)) return true;
-  if (cleanOrigin.endsWith(".vercel.app")) return true;
   if (
     process.env.NODE_ENV !== "production" &&
     (cleanOrigin.includes("localhost") || cleanOrigin.includes("127.0.0.1"))
