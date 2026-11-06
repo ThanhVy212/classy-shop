@@ -49,9 +49,34 @@ if (trustProxy && trustProxy.toLowerCase() !== "false") {
   );
 }
 
+const rawClientUrls = process.env.CLIENT_URL || "http://localhost:5173";
+const allowedOrigins = rawClientUrls
+  .split(",")
+  .map((url) => url.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
+export const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  const cleanOrigin = origin.replace(/\/+$/, "");
+  if (allowedOrigins.includes(cleanOrigin)) return true;
+  if (cleanOrigin.endsWith(".vercel.app")) return true;
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (cleanOrigin.includes("localhost") || cleanOrigin.includes("127.0.0.1"))
+  ) {
+    return true;
+  }
+  return false;
+};
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   }),
 );
