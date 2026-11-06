@@ -232,10 +232,39 @@ export const registerRateLimit = rateLimit({
   window: () => windowFromEnv("RATE_LIMIT_REGISTER_WINDOW", "1 h"),
 });
 
+// Two-layer refresh rate limiting:
+//
+//   1. refreshIpRateLimit  – keyed by client IP, higher cap.
+//      Bounds the total request volume from one IP regardless of how many
+//      different cookie values it presents. Prevents an attacker from
+//      bypassing the token-keyed limiter by cycling through fresh cookies.
+//
+//   2. refreshRateLimit    – keyed by hashed refresh-token, lower cap.
+//      Protects individual sessions: several tabs (or several users behind
+//      one NAT) each consume their own bucket so a busy multi-tab session
+//      does not exhaust a shared IP quota. Requests without a cookie fall
+//      back to the IP so they are still covered.
+//
+// Apply both in order: IP limiter first, token limiter second.
+export const refreshIpRateLimit = rateLimit({
+  name: "refresh-ip",
+  max: () => intFromEnv("RATE_LIMIT_REFRESH_IP_MAX", 200),
+  window: () => windowFromEnv("RATE_LIMIT_REFRESH_IP_WINDOW", "15 m"),
+});
+
 export const refreshRateLimit = rateLimit({
   name: "refresh",
   max: () => intFromEnv("RATE_LIMIT_REFRESH_MAX", 60),
   window: () => windowFromEnv("RATE_LIMIT_REFRESH_WINDOW", "15 m"),
+  keyGenerator: (req) => {
+    const token = req.cookies?.refreshToken;
+
+    if (typeof token === "string" && token.trim()) {
+      return crypto.createHash("sha256").update(token.trim()).digest("hex");
+    }
+
+    return getClientIp(req);
+  },
 });
 
 export const uploadRateLimit = rateLimit({

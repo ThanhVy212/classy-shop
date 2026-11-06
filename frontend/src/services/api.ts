@@ -11,6 +11,36 @@ export const setAccessToken = (token: string | null) => {
 
 export const getAccessToken = () => inMemoryToken;
 
+// Every caller that needs a new access token awaits the same in-flight
+// request. Without this, React StrictMode double effects and a burst of 401s
+// each fire their own /auth/refresh call and burn through the refresh quota.
+let refreshInFlight: Promise<string> | null = null;
+
+const requestNewAccessToken = async (): Promise<string> => {
+  const { data } = await axios.post<{ accessToken: string }>(
+    `${API_BASE_URL}/auth/refresh`,
+    {},
+    { withCredentials: true }
+  );
+
+  if (!data?.accessToken) {
+    throw new Error("Unable to refresh your session.");
+  }
+
+  setAccessToken(data.accessToken);
+  return data.accessToken;
+};
+
+export const refreshAccessToken = (): Promise<string> => {
+  if (!refreshInFlight) {
+    refreshInFlight = requestNewAccessToken().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+
+  return refreshInFlight;
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
@@ -46,16 +76,9 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-        const { data } = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
-        if (data?.accessToken) {
-          setAccessToken(data.accessToken);
-          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-          return api(originalRequest);
-        }
+        const accessToken = await refreshAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
       } catch {
         setAccessToken(null);
         localStorage.removeItem("classyshop_has_session");

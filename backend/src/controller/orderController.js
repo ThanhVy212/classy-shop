@@ -14,6 +14,12 @@ import {
   normalizeDiscountCode,
   recordDiscountUsage,
 } from "../services/discountService.js";
+import { createAdminNotification } from "../services/notificationService.js";
+import {
+  findVariant,
+  getAvailableStock,
+  hasVariants,
+} from "../services/variantService.js";
 
 const TAX_RATE = 0.08;
 const EXPRESS_SHIPPING_PRICE = 15;
@@ -105,39 +111,106 @@ const validateCreateOrderPayload = ({ contactEmail, shippingAddress, shippingMet
   return errors;
 };
 
-const changeStock = async (items, direction) => {
-  if (!items.length) return;
-
-  await Product.bulkWrite(
-    items.map((item) => ({
-      updateOne: {
-        filter: { _id: item.productId },
-        update: {
-          $inc: { countInStock: direction * (Number(item.quantity) || 0) },
+/**
+ * Atomically reserve stock for one order line. Products with variants use the
+ * positional $ operator so two customers cannot buy the last unit of the same
+ * size/color. Legacy products keep reserving from countInStock.
+ *
+ * countInStock is decremented alongside the variant because Mongo update
+ * operators skip the model's pre-validate hook that normally keeps the total
+ * in sync.
+ */
+const reserveItemStock = async (item, product) => {
+  if (hasVariants(product)) {
+    const result = await Product.updateOne(
+      {
+        _id: item.productId,
+        variants: {
+          $elemMatch: {
+            size: item.size,
+            color: item.color,
+            stock: { $gte: item.quantity },
+          },
         },
       },
-    })),
+      {
+        $inc: {
+          "variants.$.stock": -item.quantity,
+          countInStock: -item.quantity,
+        },
+      },
+    );
+
+    return result.modifiedCount === 1;
+  }
+
+  const result = await Product.updateOne(
+    {
+      _id: item.productId,
+      countInStock: { $gte: item.quantity },
+    },
+    { $inc: { countInStock: -item.quantity } },
   );
+
+  return result.modifiedCount === 1;
+};
+
+/**
+ * Give an order line's quantity back. Variant products restore the matching
+ * size/color; if that variant no longer exists (the admin edited the product
+ * after the order) the quantity falls back to the product-level count.
+ */
+const incrementItemStock = async (item) => {
+  const quantity = Math.abs(Number(item.quantity) || 0);
+  if (!quantity) return;
+
+  const product = await Product.findById(item.productId).select("variants");
+
+  if (!product) return;
+
+  if (hasVariants(product)) {
+    const result = await Product.updateOne(
+      {
+        _id: item.productId,
+        variants: { $elemMatch: { size: item.size, color: item.color } },
+      },
+      {
+        $inc: {
+          "variants.$.stock": quantity,
+          countInStock: quantity,
+        },
+      },
+    );
+
+    if (result.modifiedCount === 1) return;
+  }
+
+  await Product.updateOne(
+    { _id: item.productId },
+    { $inc: { countInStock: quantity } },
+  );
+};
+
+const restoreReservedStock = async (items) => {
+  await Promise.all(items.map((item) => incrementItemStock(item)));
 };
 
 const restoreStock = async (order) => {
   const quantities = new Map();
 
   order.orderItems.forEach((item) => {
-    const key = String(item.productId);
-    quantities.set(
-      key,
-      (quantities.get(key) || 0) + (Number(item.quantity) || 0),
-    );
+    const key = `${item.productId}::${item.size || ""}::${item.color || ""}`;
+    const existing = quantities.get(key);
+
+    quantities.set(key, {
+      productId: item.productId,
+      size: item.size || "",
+      color: item.color || "",
+      quantity: (existing?.quantity || 0) + (Number(item.quantity) || 0),
+    });
   });
 
-  await changeStock(
-    Array.from(quantities, ([productId, quantity]) => ({
-      productId,
-      quantity,
-    })),
-    1,
-  );
+  await restoreReservedStock(Array.from(quantities.values()));
 };
 
 /**
@@ -211,14 +284,40 @@ export const createOrder = async (req, res) => {
         });
       }
 
-      if (Number(product.countInStock) < quantity) {
-        return res.status(409).json({
-          message: `${product.name} only has ${Math.max(
-            0,
-            Number(product.countInStock) || 0,
-          )} left in stock.`,
+      const size = cartItem.size || "";
+      const color = cartItem.color || "";
+      const variantLabel =
+        size || color
+          ? ` in ${[size, color].filter(Boolean).join(" / ")}`
+          : "";
+
+      const matchedVariant = hasVariants(product)
+        ? findVariant(product, size, color)
+        : null;
+
+      if (hasVariants(product) && !matchedVariant) {
+        return res.status(400).json({
+          message: `${product.name}${variantLabel} is no longer available.`,
         });
       }
+
+      const available = getAvailableStock(product, size, color);
+
+      if (quantity > available) {
+        return res.status(409).json({
+          message:
+            available > 0
+              ? `${product.name}${variantLabel} only has ${available} left in stock.`
+              : `${product.name}${variantLabel} is out of stock.`,
+        });
+      }
+
+      // Use the canonical size/color from the matched variant so the stored
+      // values are identical to what reserveItemStock and incrementItemStock
+      // use when querying the variants array. Fall back to the cart values for
+      // non-variant products.
+      const canonicalSize = matchedVariant ? matchedVariant.size : size;
+      const canonicalColor = matchedVariant ? matchedVariant.color : color;
 
       orderItems.push({
         productId: product._id,
@@ -226,8 +325,8 @@ export const createOrder = async (req, res) => {
         image: product.images?.[0]?.url || cartItem.image || "",
         price: getEffectivePrice(product),
         quantity,
-        size: cartItem.size || "",
-        color: cartItem.color || "",
+        size: canonicalSize,
+        color: canonicalColor,
       });
     }
 
@@ -287,21 +386,16 @@ export const createOrder = async (req, res) => {
     );
 
     // Reserve stock with conditional updates so two customers cannot buy the
-    // same last item at the same time. Any failed update rolls the earlier
-    // reservations back.
+    // same last item (or last size/color) at the same time. Any failed update
+    // rolls the earlier reservations back.
     const reservedItems = [];
 
     for (const item of orderItems) {
-      const result = await Product.updateOne(
-        {
-          _id: item.productId,
-          countInStock: { $gte: item.quantity },
-        },
-        { $inc: { countInStock: -item.quantity } },
-      );
+      const product = productMap.get(String(item.productId));
+      const reserved = await reserveItemStock(item, product);
 
-      if (result.modifiedCount !== 1) {
-        await changeStock(reservedItems, 1);
+      if (!reserved) {
+        await restoreReservedStock(reservedItems);
         return res.status(409).json({
           message: `${item.name} just went out of stock. Please review your bag.`,
         });
@@ -340,7 +434,7 @@ export const createOrder = async (req, res) => {
         {
           status: "pending",
           changedAt: now,
-          note: "Cash on delivery — payment collected on delivery",
+          note: "Cash on delivery â€” payment collected on delivery",
         },
       ],
     });
@@ -349,7 +443,7 @@ export const createOrder = async (req, res) => {
       await order.save();
     } catch (error) {
       // Release the stock reserved above; the order was not created.
-      await changeStock(reservedItems, 1);
+      await restoreReservedStock(reservedItems);
       throw error;
     }
 
@@ -370,6 +464,10 @@ export const createOrder = async (req, res) => {
     } catch (cartError) {
       console.error("Could not clear cart after order:", cartError);
     }
+
+    // Let the admin team know a new order came in. This never throws, so a
+    // notification problem cannot fail an order that was already saved.
+    await createAdminNotification({ type: "order_created", order });
 
     let populatedOrder = null;
     try {
@@ -558,6 +656,15 @@ export const cancelOrder = async (req, res) => {
     }
 
     await restoreStock(order);
+
+    // The customer-facing cancel route is used by shoppers, including accounts
+    // that also have the admin role. Admins cancelling from the admin panel use
+    // updateOrderStatus instead, so every cancellation here should notify.
+    await createAdminNotification({
+      type: "order_cancelled",
+      order: updatedOrder,
+      reason: cancelReason,
+    });
 
     return res.status(200).json({ order: updatedOrder });
   } catch (error) {

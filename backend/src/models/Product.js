@@ -1,5 +1,34 @@
 import mongoose from "mongoose";
 
+const variantSchema = new mongoose.Schema(
+  {
+    size: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    color: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    stock: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    sku: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -42,6 +71,14 @@ const productSchema = new mongoose.Schema(
     colors: {
       type: [String],
       required: true,
+    },
+    // Optional per size/color inventory. When this array has entries it is the
+    // source of truth and countInStock is kept as the sum for catalog lists,
+    // sorting and the low-stock dashboard. Empty means the product still uses
+    // the product-level countInStock.
+    variants: {
+      type: [variantSchema],
+      default: [],
     },
     collections: {
       type: String,
@@ -105,6 +142,16 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+productSchema.pre("validate", function () {
+  if (Array.isArray(this.variants) && this.variants.length > 0) {
+    this.countInStock = this.variants.reduce(
+      (total, variant) =>
+        total + Math.max(0, Math.floor(Number(variant.stock) || 0)),
+      0,
+    );
+  }
+});
 
 const Product = mongoose.model("Product", productSchema);
 

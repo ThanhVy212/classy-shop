@@ -14,6 +14,7 @@ import { uploadSingle } from "../middlewares/uploadMiddleware.js";
 import {
   authRateLimit,
   loginRateLimit,
+  refreshIpRateLimit,
   refreshRateLimit,
   registerRateLimit,
   uploadRateLimit,
@@ -27,7 +28,7 @@ router.get("/callback/google", authRateLimit, googleCallback);
 router.post("/register", authRateLimit, registerRateLimit, register);
 router.post("/login", authRateLimit, loginRateLimit, login);
 router.post("/logout", logout);
-router.post("/refresh", refreshRateLimit, refreshToken);
+router.post("/refresh", refreshIpRateLimit, refreshRateLimit, refreshToken);
 
 router.get("/me", protectedRoute, getProfile);
 router.post(

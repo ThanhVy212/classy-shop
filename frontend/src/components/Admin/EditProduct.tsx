@@ -7,6 +7,7 @@ import {
     Check,
     Save,
     Loader2,
+    Boxes,
 } from "lucide-react";
 import Button from "../Common/Button.tsx";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import { productService } from "../../services/productService.ts";
 import { uploadService } from "../../services/uploadService.ts";
 import { getColorStyle, getColorHex } from "../../utils/colors.ts";
 import TaxonomySelect from "./TaxonomySelect.tsx";
+import type { ProductVariant } from "../../types/product.ts";
 
 const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "30", "32", "34"];
 const AVAILABLE_GENDERS = ["Men", "Women", "Unisex"] as const;
@@ -43,6 +45,65 @@ const AVAILABLE_COLORS = [
     { name: "Cream", hex: "#fffdd0" },
 ];
 
+const variantKeyOf = (size: string, color: string) =>
+    `${size.trim().toLowerCase()}::${color.trim().toLowerCase()}`;
+
+const buildVariantSku = (baseSku: string, size: string, color: string) => {
+    const base = (baseSku || "SKU").trim().toUpperCase();
+    const suffix = `${size}-${color}`
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/^-+|-+$/g, "")
+        .toUpperCase();
+
+    return suffix ? `${base}-${suffix}` : base;
+};
+
+const buildVariantMatrix = (
+    sizes: string[],
+    colors: string[],
+    existingVariants: ProductVariant[],
+    baseSku: string,
+): ProductVariant[] => {
+    const existing = new Map(
+        existingVariants.map((variant) => [
+            variantKeyOf(variant.size, variant.color),
+            variant,
+        ]),
+    );
+
+    return sizes.flatMap((size) =>
+        colors.map((color) => {
+            const current = existing.get(variantKeyOf(size, color));
+
+            return {
+                size,
+                color,
+                stock: current ? current.stock : 0,
+                sku: current?.sku || buildVariantSku(baseSku, size, color),
+            };
+        }),
+    );
+};
+
+/** Spread an old product-level stock across the new variant rows. */
+const distributeVariantStock = (
+    variants: ProductVariant[],
+    total: number,
+): ProductVariant[] => {
+    if (variants.length === 0) return variants;
+
+    const safeTotal = Math.max(0, Math.floor(Number(total) || 0));
+    const baseShare = Math.floor(safeTotal / variants.length);
+    let remainder = safeTotal - baseShare * variants.length;
+
+    return variants.map((variant) => {
+        const extra = remainder > 0 ? 1 : 0;
+        if (extra) remainder -= 1;
+
+        return { ...variant, stock: baseShare + extra };
+    });
+};
+
 const EditProduct = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -51,23 +112,37 @@ const EditProduct = () => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-    const [formData, setFormData] = useState(() => ({
-        name: isEditMode ? "Premium Classy Jacket" : "",
-        sku: isEditMode ? `PRD-00${id}` : `SKU-${Math.floor(1000 + Math.random() * 9000)}`,
-        description: isEditMode
-            ? "Crafted from high-performance breathable fabric with clean tailoring for urban comfort and everyday style."
-            : "",
-        category: "",
-        gender: "Men",
-        brand: "",
-        material: "",
-        price: isEditMode ? "120" : "",
-        originalPrice: isEditMode ? "150" : "",
-        stock: isEditMode ? "25" : "10",
-        sizes: isEditMode ? ["S", "M", "L"] : ["M", "L"],
-        colors: isEditMode ? ["Black", "Red"] : ["Black"],
-        images: [] as string[],
-    }));
+    const [formData, setFormData] = useState(() => {
+        const initialSku = isEditMode
+            ? `PRD-00${id}`
+            : `SKU-${Math.floor(1000 + Math.random() * 9000)}`;
+        const initialSizes = isEditMode ? ["S", "M", "L"] : ["M", "L"];
+        const initialColors = isEditMode ? ["Black", "Red"] : ["Black"];
+
+        return {
+            name: isEditMode ? "Premium Classy Jacket" : "",
+            sku: initialSku,
+            description: isEditMode
+                ? "Crafted from high-performance breathable fabric with clean tailoring for urban comfort and everyday style."
+                : "",
+            category: "",
+            gender: "Men",
+            brand: "",
+            material: "",
+            price: isEditMode ? "120" : "",
+            originalPrice: isEditMode ? "150" : "",
+            stock: isEditMode ? "25" : "10",
+            sizes: initialSizes,
+            colors: initialColors,
+            variants: buildVariantMatrix(
+                initialSizes,
+                initialColors,
+                [],
+                initialSku,
+            ),
+            images: [] as string[],
+        };
+    });
 
     const [imageUrlInput, setImageUrlInput] = useState("");
     const [isSaving, setIsSaving] = useState(false);
@@ -78,6 +153,34 @@ const EditProduct = () => {
                 .getProductById(id)
                 .then((prod) => {
                     if (prod) {
+                        const nextSizes =
+                            prod.sizes && prod.sizes.length > 0 ? prod.sizes : ["M"];
+                        const nextColors =
+                            prod.colors && prod.colors.length > 0 ? prod.colors : ["Black"];
+                        const existingVariants = (prod.variants ?? []).map((variant) => ({
+                            size: variant.size,
+                            color: variant.color,
+                            stock: Math.max(0, Math.floor(Number(variant.stock) || 0)),
+                            sku: variant.sku ?? "",
+                        }));
+                        const variantRows =
+                            existingVariants.length > 0
+                                ? buildVariantMatrix(
+                                      nextSizes,
+                                      nextColors,
+                                      existingVariants,
+                                      prod.sku || "",
+                                  )
+                                : distributeVariantStock(
+                                      buildVariantMatrix(
+                                          nextSizes,
+                                          nextColors,
+                                          [],
+                                          prod.sku || "",
+                                      ),
+                                      Number(prod.countInStock) || 0,
+                                  );
+
                         setFormData({
                             name: prod.name || "",
                             sku: prod.sku || "",
@@ -93,9 +196,9 @@ const EditProduct = () => {
                                 prod.countInStock !== undefined
                                     ? String(prod.countInStock)
                                     : "10",
-                            sizes: prod.sizes && prod.sizes.length > 0 ? prod.sizes : ["M"],
-                            colors:
-                                prod.colors && prod.colors.length > 0 ? prod.colors : ["Black"],
+                            sizes: nextSizes,
+                            colors: nextColors,
+                            variants: variantRows,
                             images:
                                 prod.images && prod.images.length > 0
                                     ? prod.images.map((img) => img.url)
@@ -119,21 +222,41 @@ const EditProduct = () => {
     };
 
     const toggleSize = (size: string) => {
-        setFormData((prev) => ({
-            ...prev,
-            sizes: prev.sizes.includes(size)
+        setFormData((prev) => {
+            const sizes = prev.sizes.includes(size)
                 ? prev.sizes.filter((s) => s !== size)
-                : [...prev.sizes, size],
-        }));
+                : [...prev.sizes, size];
+
+            return {
+                ...prev,
+                sizes,
+                variants: buildVariantMatrix(
+                    sizes,
+                    prev.colors,
+                    prev.variants,
+                    prev.sku,
+                ),
+            };
+        });
     };
 
     const toggleColor = (colorName: string) => {
-        setFormData((prev) => ({
-            ...prev,
-            colors: prev.colors.includes(colorName)
+        setFormData((prev) => {
+            const colors = prev.colors.includes(colorName)
                 ? prev.colors.filter((c) => c !== colorName)
-                : [...prev.colors, colorName],
-        }));
+                : [...prev.colors, colorName];
+
+            return {
+                ...prev,
+                colors,
+                variants: buildVariantMatrix(
+                    prev.sizes,
+                    colors,
+                    prev.variants,
+                    prev.sku,
+                ),
+            };
+        });
     };
 
     const displayedColors = React.useMemo(() => {
@@ -145,6 +268,20 @@ const EditProduct = () => {
         });
         return list;
     }, [formData.colors]);
+
+    const variantTotalStock = formData.variants.reduce(
+        (total, variant) => total + Math.max(0, Math.floor(Number(variant.stock) || 0)),
+        0,
+    );
+
+    const updateVariant = (index: number, patch: Partial<ProductVariant>) => {
+        setFormData((prev) => ({
+            ...prev,
+            variants: prev.variants.map((variant, variantIndex) =>
+                variantIndex === index ? { ...variant, ...patch } : variant,
+            ),
+        }));
+    };
 
     const handleAddImage = (e: React.FormEvent) => {
         e.preventDefault();
@@ -219,6 +356,13 @@ const EditProduct = () => {
             return;
         }
 
+        if (formData.sizes.length === 0 || formData.colors.length === 0) {
+            toast.error(
+                "Select at least one size and one color so every variant can track stock.",
+            );
+            return;
+        }
+
         setIsSaving(true);
         try {
             const productPayload = {
@@ -231,9 +375,15 @@ const EditProduct = () => {
                 material: formData.material.trim() || undefined,
                 price: Number(formData.price) || 0,
                 discountPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
-                countInStock: Number(formData.stock) || 0,
-                sizes: formData.sizes.length > 0 ? formData.sizes : ["M"],
-                colors: formData.colors.length > 0 ? formData.colors : ["Black"],
+                countInStock: variantTotalStock,
+                sizes: formData.sizes,
+                colors: formData.colors,
+                variants: formData.variants.map((variant) => ({
+                    size: variant.size,
+                    color: variant.color,
+                    stock: Math.max(0, Math.floor(Number(variant.stock) || 0)),
+                    sku: variant.sku?.trim() || "",
+                })),
                 collections: "Business Casual",
                 images: formData.images.map((url) => ({ url, altText: formData.name })),
                 isPublished: true,
@@ -420,18 +570,24 @@ const EditProduct = () => {
 
                         <div>
                             <label className="form-label">
-                                Inventory Quantity *
+                                Total Inventory (from variants)
                             </label>
                             <input
                                 type="number"
                                 name="stock"
                                 min="0"
-                                required
-                                value={formData.stock}
-                                onChange={handleInputChange}
-                                placeholder="25"
-                                className="form-input"
+                                value={String(variantTotalStock)}
+                                readOnly
+                                placeholder="0"
+                                className="form-input bg-gray-100 text-gray-700 cursor-not-allowed"
                             />
+                            <p className="mt-1.5 text-[11px] text-gray-500">
+                                {formData.variants.length > 0
+                                    ? `Sum of ${formData.variants.length} variant row${
+                                          formData.variants.length === 1 ? "" : "s"
+                                      } below. Edit stock per size/color there.`
+                                    : "Select at least one size and one color to create variant rows."}
+                            </p>
                         </div>
                     </div>
 
@@ -549,6 +705,96 @@ const EditProduct = () => {
                                 );
                             })}
                         </div>
+                    </div>
+
+                    {/* Per-combination stock */}
+                    <div className="rounded-2xl border border-gray-200 bg-gray-50/40 p-4 sm:p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                                    <Boxes className="w-4 h-4" />
+                                    Stock by size &amp; color
+                                </h3>
+                                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-gray-500">
+                                    {formData.variants.length > 0
+                                        ? `${formData.variants.length} combinations · ${variantTotalStock} units in total. Enter the stock for every combination; use 0 when it is sold out.`
+                                        : "Select at least one size and one color above. A stock row is created automatically for every combination."}
+                                </p>
+                            </div>
+
+                            {formData.variants.length > 0 && (
+                                <span className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700">
+                                    <Boxes className="w-3.5 h-3.5" />
+                                    {variantTotalStock} units
+                                </span>
+                            )}
+                        </div>
+
+                        {formData.variants.length > 0 ? (
+                            <div className="mt-4 space-y-2">
+                                <div className="hidden grid-cols-[1fr_1.5fr_7rem] gap-3 px-3 text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:grid">
+                                    <span>Size / Color</span>
+                                    <span>Variant SKU</span>
+                                    <span className="text-right">Stock *</span>
+                                </div>
+
+                                {formData.variants.map((variant, index) => (
+                                    <div
+                                        key={`${variant.size}-${variant.color}`}
+                                        className="grid grid-cols-1 gap-2 rounded-xl border border-gray-200 bg-white p-3 sm:grid-cols-[1fr_1.5fr_7rem] sm:items-center sm:gap-3"
+                                    >
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <span className="rounded-lg bg-gray-100 px-2 py-1 text-xs font-bold text-gray-900">
+                                                {variant.size}
+                                            </span>
+                                            <span className="flex items-center gap-1.5 font-medium text-gray-600">
+                                                <span
+                                                    className="h-3 w-3 shrink-0 rounded-full border border-gray-300"
+                                                    style={getColorStyle(variant.color || "#ffffff")}
+                                                />
+                                                {variant.color}
+                                            </span>
+                                        </div>
+
+                                        <input
+                                            type="text"
+                                            value={variant.sku ?? ""}
+                                            onChange={(event) =>
+                                                updateVariant(index, { sku: event.target.value })
+                                            }
+                                            placeholder="Variant SKU"
+                                            className="form-input py-2 font-mono text-xs"
+                                        />
+
+                                        <div className="flex items-center justify-between gap-2 sm:justify-end">
+                                            <label className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 sm:hidden">
+                                                Stock *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                required
+                                                value={variant.stock}
+                                                onChange={(event) =>
+                                                    updateVariant(index, {
+                                                        stock: Math.max(
+                                                            0,
+                                                            Math.floor(Number(event.target.value) || 0),
+                                                        ),
+                                                    })
+                                                }
+                                                className="form-input w-24 py-2 text-right text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="mt-3 text-xs leading-relaxed text-gray-500">
+                                Choose at least one size and one color above. Stock rows appear
+                                automatically for every size × color combination.
+                            </p>
+                        )}
                     </div>
                 </div>
 

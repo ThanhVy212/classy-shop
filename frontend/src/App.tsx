@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import {Toaster} from "sonner";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import { CartProvider } from "./context/CartContext.tsx";
+import { WishlistProvider } from "./context/WishlistContext.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
 import OAuthCallback from "./pages/OAuthCallback.tsx";
@@ -13,6 +14,7 @@ import Profile from "./pages/Profile.tsx";
 import Collection from "./pages/Collection.tsx";
 import ProductDetails from "./components/Products/ProductDetails.tsx";
 import Cart from "./pages/Cart.tsx";
+import Wishlist from "./pages/Wishlist.tsx";
 import Checkout from "./components/Cart/Checkout.tsx";
 import OrderDetails from "./pages/OrderDetails.tsx";
 import AdminDashboard from "./components/Admin/AdminDashboard.tsx";
@@ -64,52 +66,55 @@ const App = () => {
 
     return (
         <AuthProvider>
-            <CartProvider>
-                <BrowserRouter>
-                    <Toaster position="top-right" />
-                    <Routes>
-                        <Route path="/" element={<UserLayout/>}>
-                            <Route index element={<Home />} />
-                            <Route path="/login" element={<Login />}/>
-                            <Route path="/register" element={<Register />}/>
-                            <Route path="/oauth/callback" element={<OAuthCallback />}/>
-                            <Route path="/profile" element={
-                                <ProtectedRoute>
-                                    <Profile />
-                                </ProtectedRoute>
-                            }/>
-                            <Route path="/collections/:collection" element={<Collection />}/>
-                            <Route path="/products/:id" element={<ProductDetails />}/>
-                            <Route path="/cart" element={<Cart />}/>
-                            <Route path="/checkout" element={
-                                <ProtectedRoute>
-                                    <Checkout />
-                                </ProtectedRoute>
-                            }/>
-                            <Route path="/order/:id" element={
-                                <ProtectedRoute>
-                                    <OrderDetails />
-                                </ProtectedRoute>
-                            }/>
-                        </Route>
-                        <Route path="/admin" element={
-                            <AdminRoute>
-                                <AdminLayout />
-                            </AdminRoute>
-                        }>
-                            <Route index element={<AdminDashboard />} />
-                            <Route path="products" element={<ProductManagement />} />
-                            <Route path="products/new" element={<EditProduct />} />
-                            <Route path="products/:id/edit" element={<EditProduct />} />
-                            <Route path="catalog" element={<CatalogManagement />} />
-                            <Route path="orders" element={<OrderManagement />} />
-                            <Route path="orders/:id" element={<OrderDetails />} />
-                            <Route path="discounts" element={<DiscountManagement />} />
-                            <Route path="users" element={<UserManagement />} />
-                        </Route>
-                    </Routes>
-                </BrowserRouter>
-            </CartProvider>
+            <WishlistProvider>
+                <CartProvider>
+                    <BrowserRouter>
+                        <Toaster position="top-right" />
+                        <Routes>
+                            <Route path="/" element={<UserLayout/>}>
+                                <Route index element={<Home />} />
+                                <Route path="/login" element={<Login />}/>
+                                <Route path="/register" element={<Register />}/>
+                                <Route path="/oauth/callback" element={<OAuthCallback />}/>
+                                <Route path="/profile" element={
+                                    <ProtectedRoute>
+                                        <Profile />
+                                    </ProtectedRoute>
+                                }/>
+                                <Route path="/collections/:collection" element={<Collection />}/>
+                                <Route path="/products/:id" element={<ProductDetails />}/>
+                                <Route path="/wishlist" element={<Wishlist />}/>
+                                <Route path="/cart" element={<Cart />}/>
+                                <Route path="/checkout" element={
+                                    <ProtectedRoute>
+                                        <Checkout />
+                                    </ProtectedRoute>
+                                }/>
+                                <Route path="/order/:id" element={
+                                    <ProtectedRoute>
+                                        <OrderDetails />
+                                    </ProtectedRoute>
+                                }/>
+                            </Route>
+                            <Route path="/admin" element={
+                                <AdminRoute>
+                                    <AdminLayout />
+                                </AdminRoute>
+                            }>
+                                <Route index element={<AdminDashboard />} />
+                                <Route path="products" element={<ProductManagement />} />
+                                <Route path="products/new" element={<EditProduct />} />
+                                <Route path="products/:id/edit" element={<EditProduct />} />
+                                <Route path="catalog" element={<CatalogManagement />} />
+                                <Route path="orders" element={<OrderManagement />} />
+                                <Route path="orders/:id" element={<OrderDetails />} />
+                                <Route path="discounts" element={<DiscountManagement />} />
+                                <Route path="users" element={<UserManagement />} />
+                            </Route>
+                        </Routes>
+                    </BrowserRouter>
+                </CartProvider>
+            </WishlistProvider>
         </AuthProvider>
     );
 };

@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Camera,
   HelpCircle,
+  Heart,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -239,6 +240,16 @@ const Profile = () => {
                 <span className="rounded-full bg-[var(--color-surface)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]">
                   Active
                 </span>
+              </Link>
+
+              <Link
+                to="/wishlist"
+                className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] px-5 py-3.5 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-surface-muted)]/50 hover:text-[var(--color-primary)]">
+                <span className="inline-flex items-center gap-2.5">
+                  <Heart className="h-4 w-4" />
+                  My wishlist
+                </span>
+                <ArrowRight className="h-4 w-4" />
               </Link>
 
               <Link

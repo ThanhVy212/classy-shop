@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "./useCart";
 import { productService } from "../services/productService";
 import type { Product } from "../types/product";
+import { getAvailableStock } from "../utils/variants";
 
 export interface SyncedCartLine {
   productId: string;
@@ -113,8 +114,12 @@ export const useSyncedCart = (): SyncedCartResult => {
       const product = syncedProducts[item.productId];
       const quantity = Math.max(1, Number(item.quantity) || 1);
       const price = getEffectivePrice(product, item.price);
-      const rawStock = Number(product?.countInStock);
-      const stock = Number.isFinite(rawStock) ? rawStock : undefined;
+      // Availability must be checked for the selected size/color, not the
+      // product total, otherwise a cart line can look in stock while its own
+      // variant is sold out.
+      const stock = product
+        ? getAvailableStock(product, item.size, item.color)
+        : undefined;
       const image =
         product?.images?.[0]?.url || product?.image || item.image || "";
 

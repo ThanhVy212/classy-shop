@@ -24,6 +24,7 @@ interface AdminProductItem {
   stock: number;
   image: string;
   sku: string;
+  variantCount: number;
 }
 
 const ProductManagement = () => {
@@ -48,6 +49,7 @@ const ProductManagement = () => {
           price: p.price,
           stock: p.countInStock ?? 0,
           sku: p.sku,
+          variantCount: p.variants?.length ?? 0,
           image:
             p.images?.[0]?.url ||
             p.image ||
@@ -258,6 +260,14 @@ const ProductManagement = () => {
                               ? "Out of Stock"
                               : `${prod.stock} in stock`}
                           </span>
+                          {prod.variantCount > 0 && (
+                            <span
+                              className="rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700"
+                              title={`Stock tracked across ${prod.variantCount} size/color combinations`}
+                            >
+                              {prod.variantCount} variants
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="py-4 px-5 text-right whitespace-nowrap">

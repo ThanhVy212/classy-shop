@@ -19,6 +19,7 @@ import {
   formatOrderDate,
   getOrderItemsCount,
   ORDER_STATUS_CLASSES,
+  ORDER_STATUS_LABELS,
   ORDER_STATUSES,
   PAYMENT_STATUS_META,
 } from "../utils/order";
@@ -28,7 +29,10 @@ const PAGE_SIZE = 5;
 
 const STATUS_TABS: Array<{ value: OrderStatus | "all"; label: string }> = [
   { value: "all", label: "All orders" },
-  ...ORDER_STATUSES.map((status) => ({ value: status, label: status })),
+  ...ORDER_STATUSES.map((status) => ({
+    value: status,
+    label: ORDER_STATUS_LABELS[status],
+  })),
 ];
 
 const OrderSkeleton = () => (
@@ -194,7 +198,7 @@ const MyOrders = () => {
           <h3 className="mt-5 text-lg font-semibold text-[var(--color-ink)]">
             {statusFilter === "all"
               ? "No orders yet"
-              : `No ${statusFilter.toLowerCase()} orders`}
+              : `No ${ORDER_STATUS_LABELS[statusFilter].toLowerCase()} orders`}
           </h3>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-[var(--color-ink-soft)]">
             {statusFilter === "all"
@@ -248,7 +252,7 @@ const MyOrders = () => {
                       {order.orderStatus === "Cancelled" && (
                         <XCircle className="h-3.5 w-3.5" />
                       )}
-                      {order.orderStatus}
+                      {ORDER_STATUS_LABELS[order.orderStatus]}
                     </span>
                     <span className={`status-badge ${payment.className}`}>
                       {payment.label}
