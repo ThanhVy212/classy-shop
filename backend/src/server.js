@@ -17,6 +17,7 @@ import adminNotificationRoutes from "./routes/adminNotificationRoutes.js";
 import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
 import discountRoutes from "./routes/discountRoutes.js";
 import adminDiscountRoutes from "./routes/adminDiscountRoutes.js";
+import adminUserRoutes from "./routes/adminUserRoutes.js";
 import {
   apiRateLimit,
   writeRateLimit,
@@ -99,6 +100,7 @@ app.use("/api/admin/notifications", adminNotificationRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/discounts", discountRoutes);
 app.use("/api/admin/discounts", adminDiscountRoutes);
+app.use("/api/admin/users", adminUserRoutes);
 
 // Connect to MongoDB
 connectDB().then(async () => {

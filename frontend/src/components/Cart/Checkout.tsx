@@ -9,11 +9,13 @@ import {
     Check,
     CreditCard,
     Lock,
+    MapPin,
     Minus,
     Plus,
     RefreshCcw,
     ShieldCheck,
     ShoppingBag,
+    Star,
     Tag,
     Trash2,
     Truck,
@@ -32,6 +34,8 @@ import {
 import { getColorStyle } from "../../utils/colors.ts";
 import { orderService } from "../../services/orderService.ts";
 import { discountService } from "../../services/discountService.ts";
+import { addressService } from "../../services/addressService.ts";
+import type { ShippingAddress } from "../../types/auth.ts";
 import type { PaymentMethod } from "../../types/order.ts";
 import type { DiscountValidation } from "../../types/discount.ts";
 import { calculateDiscountPreview } from "../../utils/discount.ts";
@@ -60,6 +64,44 @@ const getCheckoutDefaults = (name?: string, email?: string): CheckoutFormData =>
     };
 };
 
+const splitFullName = (fullName: string) => {
+    const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+
+    return {
+        firstName: parts[0] || "",
+        lastName: parts.slice(1).join(" "),
+    };
+};
+
+const isSameAddress = (
+    saved: ShippingAddress,
+    next: {
+        fullName: string;
+        phone: string;
+        address: string;
+        apartment: string;
+        city: string;
+        postalCode: string;
+        country: string;
+    }
+) => {
+    const fields = [
+        "fullName",
+        "phone",
+        "address",
+        "apartment",
+        "city",
+        "postalCode",
+        "country",
+    ] as const;
+
+    return fields.every(
+        (field) =>
+            (saved[field] || "").trim().toLowerCase() ===
+            (next[field] || "").trim().toLowerCase()
+    );
+};
+
 const Checkout = () => {
     const navigate = useNavigate();
     const {
@@ -70,7 +112,8 @@ const Checkout = () => {
         clearCart,
         isLoading: cartLoading,
     } = useCart();
-    const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+    const { isAuthenticated, isLoading: authLoading, user, setUser } =
+        useAuth();
 
     const {
         register,
@@ -86,6 +129,7 @@ const Checkout = () => {
     });
 
     const shippingMethod = useWatch({ control, name: "shippingMethod" });
+    const saveInfo = useWatch({ control, name: "saveInfo" });
 
     const [promoCode, setPromoCode] = useState("");
     const [appliedDiscount, setAppliedDiscount] =
@@ -95,7 +139,118 @@ const Checkout = () => {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [addresses, setAddresses] = useState<ShippingAddress[]>(
+        () => user?.addresses ?? []
+    );
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+        null
+    );
+    const [saveAsDefault, setSaveAsDefault] = useState(false);
+    const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+
     const hasRequestedCart = useRef(false);
+    const hasAppliedDefaultAddress = useRef(false);
+
+    const applyAddressToForm = (address: ShippingAddress) => {
+        const { firstName, lastName } = splitFullName(address.fullName);
+
+        setValue("firstName", firstName);
+        setValue("lastName", lastName);
+        setValue("address", address.address || "");
+        setValue("apartment", address.apartment || "");
+        setValue("city", address.city || "");
+        setValue("postalCode", address.postalCode || "");
+        setValue("phone", address.phone || "");
+        setValue(
+            "country",
+            (COUNTRIES as readonly string[]).includes(address.country)
+                ? (address.country as CheckoutFormData["country"])
+                : "United States"
+        );
+    };
+
+    const handleSelectAddress = (address: ShippingAddress) => {
+        setSelectedAddressId(address._id);
+        setSaveAsDefault(address.isDefault);
+        applyAddressToForm(address);
+    };
+
+    const handleUseNewAddress = () => {
+        setSelectedAddressId(null);
+        setSaveAsDefault(addresses.length === 0);
+        setValue("address", "");
+        setValue("apartment", "");
+        setValue("city", "");
+        setValue("postalCode", "");
+        setValue("phone", "");
+    };
+
+    const handleSetDefaultAddress = async (address: ShippingAddress) => {
+        try {
+            const updated = await addressService.setDefaultAddress(address._id);
+
+            setAddresses(updated);
+            setUser((current) =>
+                current ? { ...current, addresses: updated } : current
+            );
+            toast.success("Default delivery address updated");
+        } catch (error) {
+            toast.error(
+                getApiErrorMessage(
+                    error,
+                    "Could not update your default address."
+                )
+            );
+        }
+    };
+
+    const persistAddress = async (data: CheckoutFormData) => {
+        if (!data.saveInfo) return;
+
+        const payload = {
+            fullName: `${data.firstName} ${data.lastName}`.trim(),
+            phone: data.phone,
+            address: data.address,
+            apartment: data.apartment,
+            city: data.city,
+            postalCode: data.postalCode,
+            country: data.country,
+        };
+
+        try {
+            const existing = addresses.find((address) =>
+                isSameAddress(address, payload)
+            );
+
+            if (existing) {
+                if (saveAsDefault && !existing.isDefault) {
+                    const updated = await addressService.setDefaultAddress(
+                        existing._id
+                    );
+
+                    setAddresses(updated);
+                    setUser((current) =>
+                        current ? { ...current, addresses: updated } : current
+                    );
+                }
+                return;
+            }
+
+            const updated = await addressService.createAddress({
+                ...payload,
+                isDefault: saveAsDefault || addresses.length === 0,
+            });
+
+            setAddresses(updated);
+            setUser((current) =>
+                current ? { ...current, addresses: updated } : current
+            );
+        } catch (error) {
+            // The order is already placed at this point; a failed address save
+            // must never make the checkout look unsuccessful.
+            console.warn("Could not save the delivery address:", error);
+        }
+    };
 
     // Make sure the bag is re-fetched from the cart API when checkout opens.
     useEffect(() => {
@@ -103,6 +258,50 @@ const Checkout = () => {
         hasRequestedCart.current = true;
         void refreshCart();
     }, [isAuthenticated, refreshCart]);
+
+    // Load the address book from the API so it stays in sync across devices.
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        let isMounted = true;
+        setIsLoadingAddresses(true);
+
+        void addressService
+            .getAddresses()
+            .then((list) => {
+                if (!isMounted) return;
+                setAddresses(list);
+                setUser((current) =>
+                    current ? { ...current, addresses: list } : current
+                );
+            })
+            .catch(() => {
+                // Keep the addresses already embedded in the auth profile.
+            })
+            .finally(() => {
+                if (isMounted) setIsLoadingAddresses(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isAuthenticated, setUser]);
+
+    // Prefill the form with the default address the first time the book loads.
+    useEffect(() => {
+        if (hasAppliedDefaultAddress.current || addresses.length === 0) return;
+
+        hasAppliedDefaultAddress.current = true;
+
+        const preferred =
+            addresses.find((address) => address.isDefault) ?? addresses[0];
+
+        setSelectedAddressId(preferred._id);
+        setSaveAsDefault(preferred.isDefault);
+        applyAddressToForm(preferred);
+        // Only run when the saved addresses first arrive.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [addresses]);
 
     useEffect(() => {
         if (!user) return;
@@ -231,6 +430,8 @@ const Checkout = () => {
                 paymentMethod,
                 promoCode: appliedDiscount?.code ?? null,
             });
+
+            await persistAddress(data);
 
             clearCart();
             void refreshCart();
@@ -419,6 +620,121 @@ const Checkout = () => {
                                         Where should it go?
                                     </h2>
                                 </div>
+
+                                {isLoadingAddresses && addresses.length === 0 ? (
+                                    <div className="mt-5 flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
+                                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
+                                        Loading saved addresses…
+                                    </div>
+                                ) : addresses.length > 0 ? (
+                                    <div className="mt-5">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-muted)]">
+                                                Saved addresses
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                onClick={handleUseNewAddress}
+                                                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)]"
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Use a new address
+                                            </Button>
+                                        </div>
+
+                                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                            {addresses.map((address) => {
+                                                const isActive =
+                                                    selectedAddressId ===
+                                                    address._id;
+
+                                                return (
+                                                    <div
+                                                        key={address._id}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() =>
+                                                            handleSelectAddress(
+                                                                address
+                                                            )
+                                                        }
+                                                        onKeyDown={(event) => {
+                                                            if (
+                                                                event.key ===
+                                                                    "Enter" ||
+                                                                event.key === " "
+                                                            ) {
+                                                                event.preventDefault();
+                                                                handleSelectAddress(
+                                                                    address
+                                                                );
+                                                            }
+                                                        }}
+                                                        aria-pressed={isActive}
+                                                        className={`relative cursor-pointer rounded-2xl border p-4 pr-5 text-left transition-all ${
+                                                            isActive
+                                                                ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]/50 ring-1 ring-[var(--color-primary)]"
+                                                                : "border-[var(--color-border)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]/40"
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-semibold text-[var(--color-ink)]">
+                                                                <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--color-primary)]" />
+                                                                <span className="truncate">
+                                                                    {
+                                                                        address.fullName
+                                                                    }
+                                                                </span>
+                                                            </span>
+                                                            {address.isDefault ? (
+                                                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--color-primary)]">
+                                                                    <Star className="h-2.5 w-2.5 fill-current" />
+                                                                    Default
+                                                                </span>
+                                                            ) : (
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={(
+                                                                        event
+                                                                    ) => {
+                                                                        event.stopPropagation();
+                                                                        void handleSetDefaultAddress(
+                                                                            address
+                                                                        );
+                                                                    }}
+                                                                    className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-primary)]"
+                                                                >
+                                                                    Set default
+                                                                </Button>
+                                                            )}
+                                                        </div>
+
+                                                        <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-ink-soft)]">
+                                                            {address.address}
+                                                            {address.apartment
+                                                                ? `, ${address.apartment}`
+                                                                : ""}
+                                                            <br />
+                                                            {address.city},{" "}
+                                                            {address.postalCode}
+                                                            <br />
+                                                            {address.country}
+                                                        </p>
+                                                        <p className="mt-1.5 text-xs text-[var(--color-ink-muted)]">
+                                                            {address.phone}
+                                                        </p>
+
+                                                        {isActive && (
+                                                            <span className="absolute bottom-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-white">
+                                                                <Check className="h-3 w-3" />
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ) : null}
 
                                 <div className="mt-5 space-y-4">
                                     <div>
@@ -671,7 +987,7 @@ const Checkout = () => {
                                         )}
                                     </div>
 
-                                    <label className="flex cursor-pointer items-start gap-3 pt-1 text-sm text-[var(--color-ink-soft)]">
+                                    <label className="flex cursor-pointer items-start gap-3 text-sm text-[var(--color-ink-soft)]">
                                         <input
                                             type="checkbox"
                                             {...register("saveInfo")}
@@ -682,6 +998,25 @@ const Checkout = () => {
                                             checkout next time.
                                         </span>
                                     </label>
+
+                                    {saveInfo && (
+                                        <label className="flex cursor-pointer items-start gap-3 text-sm text-[var(--color-ink-soft)]">
+                                            <input
+                                                type="checkbox"
+                                                checked={saveAsDefault}
+                                                onChange={(event) =>
+                                                    setSaveAsDefault(
+                                                        event.target.checked
+                                                    )
+                                                }
+                                                className="form-checkbox mt-0.5"
+                                            />
+                                            <span>
+                                                Set this as my default delivery
+                                                address.
+                                            </span>
+                                        </label>
+                                    )}
                                 </div>
                             </section>
 

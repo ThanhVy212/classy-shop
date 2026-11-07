@@ -9,6 +9,13 @@ import {
   register,
   updateAvatar,
 } from "../controller/authController.js";
+import {
+  createAddress,
+  deleteAddress,
+  getAddresses,
+  setDefaultAddress,
+  updateAddress,
+} from "../controller/addressController.js";
 import { protectedRoute } from "../middlewares/authMiddleware.js";
 import { uploadSingle } from "../middlewares/uploadMiddleware.js";
 import {
@@ -31,6 +38,17 @@ router.post("/logout", logout);
 router.post("/refresh", refreshIpRateLimit, refreshRateLimit, refreshToken);
 
 router.get("/me", protectedRoute, getProfile);
+
+router.get("/addresses", protectedRoute, getAddresses);
+router.post("/addresses", protectedRoute, createAddress);
+router.patch("/addresses/:addressId", protectedRoute, updateAddress);
+router.patch(
+  "/addresses/:addressId/default",
+  protectedRoute,
+  setDefaultAddress,
+);
+router.delete("/addresses/:addressId", protectedRoute, deleteAddress);
+
 router.post(
   "/avatar",
   protectedRoute,

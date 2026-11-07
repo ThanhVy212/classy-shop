@@ -1,5 +1,18 @@
 export type UserRole = "admin" | "customer";
 
+export interface ShippingAddress {
+  _id: string;
+  label?: string;
+  fullName: string;
+  phone: string;
+  address: string;
+  apartment: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
 export interface AuthUser {
   _id: string;
   name: string;
@@ -8,6 +21,7 @@ export interface AuthUser {
   avatarUrl?: string;
   googleId?: string | null;
   isEmailVerified?: boolean;
+  addresses?: ShippingAddress[];
   createdAt?: string;
   updatedAt?: string;
 }
