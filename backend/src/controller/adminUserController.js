@@ -97,6 +97,12 @@ export const createUser = async (req, res) => {
       user: user.toJSON(),
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res
+        .status(409)
+        .json({ message: "An account with that email already exists." });
+    }
+
     console.error("Create user error:", error);
     return res.status(500).json({ message: "Could not create this user." });
   }

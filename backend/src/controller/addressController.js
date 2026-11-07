@@ -194,6 +194,7 @@ export const updateAddress = async (req, res) => {
     Object.assign(address, fields);
 
     const validationError = validateAddress({
+      label: address.label,
       fullName: address.fullName,
       phone: address.phone,
       address: address.address,

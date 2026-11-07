@@ -193,6 +193,10 @@ const Checkout = () => {
             setUser((current) =>
                 current ? { ...current, addresses: updated } : current
             );
+
+            const matched = updated.find((a) => a._id === selectedAddressId);
+            setSaveAsDefault(matched ? matched.isDefault : false);
+
             toast.success("Default delivery address updated");
         } catch (error) {
             toast.error(
@@ -660,9 +664,11 @@ const Checkout = () => {
                                                         }
                                                         onKeyDown={(event) => {
                                                             if (
-                                                                event.key ===
+                                                                event.target ===
+                                                                    event.currentTarget &&
+                                                                (event.key ===
                                                                     "Enter" ||
-                                                                event.key === " "
+                                                                event.key === " ")
                                                             ) {
                                                                 event.preventDefault();
                                                                 handleSelectAddress(
