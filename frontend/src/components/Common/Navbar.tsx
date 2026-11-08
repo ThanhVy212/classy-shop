@@ -12,7 +12,7 @@ import { useCart } from "../../hooks/useCart.ts";
 import { useWishlist } from "../../hooks/useWishlist.ts";
 
 const Navbar = () => {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, isLoading: authLoading } = useAuth();
     const { totalItems } = useCart();
     const { count: wishlistCount } = useWishlist();
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -59,7 +59,14 @@ const Navbar = () => {
                     <Link
                         to={isAuthenticated ? "/profile" : "/login"}
                         aria-label="Profile"
-                        className="group flex items-center gap-1.5 sm:gap-2 transition-colors"
+                        aria-disabled={authLoading}
+                        tabIndex={authLoading ? -1 : undefined}
+                        onClick={(e) => {
+                            if (authLoading) e.preventDefault();
+                        }}
+                        className={`group flex items-center gap-1.5 sm:gap-2 transition-colors ${
+                            authLoading ? "pointer-events-none opacity-60 cursor-not-allowed" : ""
+                        }`}
                     >
                         <UserRound className="h-5 w-5 text-[var(--color-ink-soft)] group-hover:text-[var(--color-primary)] transition-colors shrink-0" />
                         {isAuthenticated && user?.name && (
@@ -158,6 +165,14 @@ const Navbar = () => {
                                             <UserRound className="h-5 w-5 text-[var(--color-ink-soft)] shrink-0" />
                                             <span className="truncate">{user.name}</span>
                                         </Link>
+                                    ) : authLoading ? (
+                                        <span
+                                            aria-disabled="true"
+                                            className="flex items-center gap-2.5 text-[var(--color-ink-soft)] opacity-60 font-medium text-sm py-1 cursor-not-allowed"
+                                        >
+                                            <UserRound className="h-5 w-5 text-[var(--color-ink-soft)] shrink-0" />
+                                            <span>Loading...</span>
+                                        </span>
                                     ) : (
                                         <Link
                                             to="/login"

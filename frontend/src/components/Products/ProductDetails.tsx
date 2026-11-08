@@ -10,6 +10,7 @@ import { useCart } from "../../hooks/useCart.ts";
 import type { Product } from "../../types/product.ts";
 import { sampleSelectedProduct } from "../../constants";
 import { getColorStyle } from "../../utils/colors.ts";
+import { getImagesForColor } from "../../utils/productImages.ts";
 import {
   findFirstInStockVariant,
   getAvailableStock,
@@ -118,6 +119,18 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
       isMounted = false;
     };
   }, [targetId]);
+
+  // Keep the main image in sync with the selected color. The gallery itself
+  // keeps showing every product image; only the main image changes to the
+  // photo assigned to the selected color.
+  useEffect(() => {
+    if (!product) return;
+
+    const colorGallery = getImagesForColor(product, selectedColor);
+    const fallbackImage = product.images?.[0]?.url || product.image || "";
+
+    setMainImage(colorGallery[0]?.url || fallbackImage);
+  }, [product, selectedColor]);
 
   const handleQuantityChange = (action: "plus" | "minus") => {
     if (action === "plus") {
@@ -247,12 +260,12 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
           {/* Main Image with Zoom */}
           <div className="md:w-1/2">
             <ProductImageZoom
-              src={mainImage || images[0].url}
+              src={mainImage || images[0]?.url || ""}
               alt={product.name}
               images={images}
               currentIndex={Math.max(
                 0,
-                images.findIndex((img) => img.url === (mainImage || images[0].url))
+                images.findIndex((img) => img.url === (mainImage || images[0]?.url))
               )}
               onSelectImage={(idx) => {
                 if (images[idx]) {
@@ -311,7 +324,8 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                 </p>
                 <div className="flex gap-2.5 mt-2">
                   {product.colors.map((color) => {
-                    // Disabled only when this color has no stock in any size.
+                    // Colors stay selectable even when sold out; choosing one
+                    // reveals which sizes are still available in that color.
                     const colorHasAnyStock = isColorAvailable(product, color);
                     return (
                       <Button
@@ -319,26 +333,29 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                         onClick={() => {
                           setSelectedColor(color);
                           setQuantity(1);
+
+                          const colorImage = getImagesForColor(product, color)[0]
+                            ?.url;
+                          setMainImage(
+                            colorImage ||
+                              product.images?.[0]?.url ||
+                              product.image ||
+                              "",
+                          );
                         }}
-                        disabled={!colorHasAnyStock}
                         title={
                           colorHasAnyStock
                             ? `Select color ${color}`
                             : `${color} is out of stock`
                         }
-
                         aria-label={`Select color ${color}`}
-                        className={`relative w-8 h-8 rounded-full border border-[var(--color-border-strong)] transition-all duration-200 ease-in-out ${
+                        className={`relative w-8 h-8 rounded-full border border-[var(--color-border-strong)] transition-all duration-200 ease-in-out cursor-pointer ${
                           selectedColor === color
                             ? "ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)] scale-105"
                             : "hover:scale-105"
-                        } ${colorHasAnyStock ? "cursor-pointer" : "cursor-not-allowed"}`}
+                        }`}
                         style={getColorStyle(color)}
-                      >
-                        {!colorHasAnyStock && (
-                          <span className="pointer-events-none absolute left-1/2 top-1/2 h-[2px] w-8 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-[var(--color-danger)] shadow-[0_0_0_1px_rgba(255,255,255,0.9)]" />
-                        )}
-                      </Button>
+                      />
                     );
                   })}
                 </div>
@@ -356,8 +373,16 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                 </p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   {product.sizes.map((size) => {
-                    // Disabled only when this size has no stock in any color.
-                    const sizeHasAnyStock = isSizeAvailable(product, size);
+                    // Out-of-stock is scoped to the selected color. The size
+                    // stays clickable so the shopper can see the out-of-stock
+                    // state instead of hitting a dead disabled control.
+                    const sizeHasStock = isSizeAvailable(
+                      product,
+                      size,
+                      selectedColor || undefined,
+                    );
+                    const isSelected = selectedSize === size;
+
                     return (
                       <Button
                         key={size}
@@ -365,21 +390,24 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                           setSelectedSize(size);
                           setQuantity(1);
                         }}
-                        disabled={!sizeHasAnyStock}
                         title={
-                          sizeHasAnyStock
+                          sizeHasStock
                             ? `Select size ${size}`
-                            : `Size ${size} is out of stock`
+                            : `Size ${size} is out of stock${
+                                selectedColor
+                                  ? ` in ${selectedColor}`
+                                  : ""
+                              }`
                         }
-
-                        className={`min-w-[3rem] px-4 py-2 rounded-xl border font-medium text-sm transition-all duration-200 ${
-                          selectedSize === size
-                            ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm scale-105"
-                            : "bg-transparent text-[var(--color-ink)] border-[var(--color-border-strong)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)]"
-                        } ${
-                          sizeHasAnyStock
-                            ? "cursor-pointer"
-                            : "cursor-not-allowed opacity-40 line-through"
+                        aria-disabled={!sizeHasStock}
+                        className={`min-w-[3rem] px-4 py-2 rounded-xl border font-medium text-sm transition-all duration-200 cursor-pointer ${
+                          !sizeHasStock
+                            ? `bg-[var(--color-surface-muted)] text-[var(--color-ink-muted)] border-[var(--color-border-strong)] line-through opacity-60 ${
+                                isSelected ? "ring-1 ring-[var(--color-border-strong)]" : ""
+                              }`
+                            : isSelected
+                              ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm scale-105"
+                              : "bg-transparent text-[var(--color-ink)] border-[var(--color-border-strong)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)]"
                         }`}>
                         {size}
                       </Button>
@@ -421,7 +449,9 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                   }`}>
                   {!selectedSize || !selectedColor
                     ? "Select a size and color to see availability."
-                    : `${availableStock} available in this combination`}
+                    : isCombinationSoldOut
+                      ? "Out of stock in this combination."
+                      : `${availableStock} available in this combination`}
                 </p>
               ) : soldOut ? (
                 <p className="mt-2 text-xs font-medium text-[var(--color-danger)]">

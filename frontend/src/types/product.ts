@@ -4,6 +4,11 @@ export interface ProductImage {
   _id?: string;
 }
 
+export interface ProductColorImages {
+  color: string;
+  images: ProductImage[];
+}
+
 export interface ProductVariant {
   size: string;
   color: string;
@@ -28,6 +33,7 @@ export interface Product {
   material?: string;
   gender?: "Men" | "Women" | "Unisex" | string;
   images: ProductImage[];
+  colorImages?: ProductColorImages[];
   isFeatured?: boolean;
   isPublished?: boolean;
   rating?: number;

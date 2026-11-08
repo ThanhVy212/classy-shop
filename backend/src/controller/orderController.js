@@ -15,6 +15,7 @@ import {
   recordDiscountUsage,
 } from "../services/discountService.js";
 import { createAdminNotification } from "../services/notificationService.js";
+import { recordOrderStockMovements } from "../services/inventoryService.js";
 import {
   findVariant,
   getAvailableStock,
@@ -469,6 +470,14 @@ export const createOrder = async (req, res) => {
     // notification problem cannot fail an order that was already saved.
     await createAdminNotification({ type: "order_created", order });
 
+    // Record the stock reserved above as an "out" movement. Failures are
+    // logged inside the service and never block the order.
+    await recordOrderStockMovements({
+      order,
+      items: reservedItems,
+      type: "order_out",
+    });
+
     let populatedOrder = null;
     try {
       populatedOrder = await Order.findById(order._id).populate(
@@ -656,6 +665,13 @@ export const cancelOrder = async (req, res) => {
     }
 
     await restoreStock(order);
+
+    // Add the returned units to the inventory history.
+    await recordOrderStockMovements({
+      order: updatedOrder,
+      items: updatedOrder.orderItems,
+      type: "order_return",
+    });
 
     // The customer-facing cancel route is used by shoppers, including accounts
     // that also have the admin role. Admins cancelling from the admin panel use
@@ -893,6 +909,14 @@ export const updateOrderStatus = async (req, res) => {
       }
 
       await restoreStock(order);
+
+      await recordOrderStockMovements({
+        order: updatedOrder,
+        items: updatedOrder.orderItems,
+        type: "order_return",
+        performedBy: req.user._id,
+        performedByName: req.user.name || req.user.email || "Administrator",
+      });
 
       const populatedOrder = await Order.findById(updatedOrder._id).populate(
         "user",

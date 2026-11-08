@@ -1,5 +1,58 @@
 import mongoose from "mongoose";
 
+// A saved delivery address. Kept as a subdocument so customers can keep a
+// small address book and pick a default one at checkout.
+const addressSchema = new mongoose.Schema(
+  {
+    label: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 40,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    apartment: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    postalCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    country: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: true },
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -36,6 +89,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["admin", "customer"],
       default: "customer",
+    },
+    addresses: {
+      type: [addressSchema],
+      default: [],
     },
   },
   {
