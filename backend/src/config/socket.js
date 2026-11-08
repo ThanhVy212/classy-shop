@@ -4,6 +4,8 @@ import User from "../models/User.js";
 
 export const ADMIN_ROOM = "admin:all";
 export const ADMIN_NOTIFICATION_EVENT = "admin:notification";
+export const ADMIN_STOCK_ALERT_EVENT = "admin:stock-alert";
+export const ADMIN_STOCK_UPDATED_EVENT = "admin:stock-updated";
 
 let io = null;
 
@@ -132,5 +134,20 @@ export const emitAdminNotification = (notification) => {
   io.to(ADMIN_ROOM).emit(ADMIN_NOTIFICATION_EVENT, {
     ...payload,
     isRead: false,
+  });
+};
+
+/** Pushes a low-stock / out-of-stock alert to every connected admin. */
+export const emitAdminStockAlert = (alert) => {
+  if (!io || !alert) return;
+  io.to(ADMIN_ROOM).emit(ADMIN_STOCK_ALERT_EVENT, alert);
+};
+
+/** Tells connected admins that inventory rows changed and should refresh. */
+export const emitAdminStockUpdated = (payload = {}) => {
+  if (!io) return;
+  io.to(ADMIN_ROOM).emit(ADMIN_STOCK_UPDATED_EVENT, {
+    ...payload,
+    at: new Date().toISOString(),
   });
 };

@@ -2,6 +2,8 @@ import { io } from "socket.io-client";
 import type { Socket } from "socket.io-client";
 
 export const ADMIN_NOTIFICATION_EVENT = "admin:notification";
+export const ADMIN_STOCK_ALERT_EVENT = "admin:stock-alert";
+export const ADMIN_STOCK_UPDATED_EVENT = "admin:stock-updated";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:8000/api";

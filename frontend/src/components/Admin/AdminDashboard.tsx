@@ -4,6 +4,7 @@ import {
     AlertCircle,
     ArrowRight,
     ArrowUpRight,
+    Boxes,
     CheckCircle2,
     Clock,
     DollarSign,
@@ -232,6 +233,13 @@ const AdminDashboard = () => {
                         />
                         <span>Refresh</span>
                     </Button>
+
+                    <Link to="/admin/inventory">
+                        <Button className="btn-outline inline-flex items-center gap-2">
+                            <Boxes className="w-4 h-4" />
+                            <span>Inventory</span>
+                        </Button>
+                    </Link>
 
                     <Link to="/admin/products/new">
                         <Button className="btn-primary-action">

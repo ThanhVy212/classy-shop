@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
     BadgePercent,
     Bell,
+    Boxes,
     CheckCheck,
     LayoutDashboard,
     ShoppingBag,
@@ -20,8 +21,11 @@ import { toast } from "sonner";
 import Button from "../Common/Button.tsx";
 import { useAuth } from "../../hooks/useAuth.ts";
 import { notificationService } from "../../services/notificationService.ts";
+import { inventoryService } from "../../services/inventoryService.ts";
 import {
     ADMIN_NOTIFICATION_EVENT,
+    ADMIN_STOCK_ALERT_EVENT,
+    ADMIN_STOCK_UPDATED_EVENT,
     connectAdminSocket,
     disconnectAdminSocket,
 } from "../../services/socket.ts";
@@ -48,9 +52,12 @@ const AdminLayout = () => {
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
     const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
     const [isSocketConnected, setIsSocketConnected] = useState(false);
+    const [outOfStockCount, setOutOfStockCount] = useState(0);
     const notificationsRef = useRef<HTMLDivElement | null>(null);
     const knownNotificationIdsRef = useRef<Set<string>>(new Set());
     const refreshRequestIdRef = useRef(0);
+    const lowStockRequestIdRef = useRef(0);
+    const lowStockRefreshTimerRef = useRef<number | null>(null);
     const acceptedSocketEventsCountRef = useRef(0);
 
     const refreshNotifications = useCallback(async () => {
@@ -103,6 +110,32 @@ const AdminLayout = () => {
         }
     }, []);
 
+    const refreshLowStockCount = useCallback(async () => {
+        const requestId = ++lowStockRequestIdRef.current;
+
+        try {
+            const data = await inventoryService.getLowStock(1);
+            if (requestId !== lowStockRequestIdRef.current) return;
+            // The sidebar badge highlights rows that are fully out of stock.
+            // Low-stock rows are numerous and stay inside the Inventory page.
+            setOutOfStockCount(data.counts.out);
+        } catch {
+            // Keep the last known count; the page itself will surface errors.
+        }
+    }, []);
+
+    // A bulk update emits one event per row, so coalesce count refreshes.
+    const scheduleLowStockRefresh = useCallback(() => {
+        if (lowStockRefreshTimerRef.current) {
+            window.clearTimeout(lowStockRefreshTimerRef.current);
+        }
+
+        lowStockRefreshTimerRef.current = window.setTimeout(() => {
+            lowStockRefreshTimerRef.current = null;
+            void refreshLowStockCount();
+        }, 600);
+    }, [refreshLowStockCount]);
+
     useEffect(() => {
         const socket = connectAdminSocket();
         setIsSocketConnected(socket.connected);
@@ -120,6 +153,7 @@ const AdminLayout = () => {
             setIsSocketConnected(true);
             // Re-sync after a reconnect so events missed while offline appear.
             void refreshNotifications();
+            void refreshLowStockCount();
         };
 
         const handleDisconnect = () => setIsSocketConnected(false);
@@ -159,22 +193,45 @@ const AdminLayout = () => {
             });
         };
 
+        const handleStockAlert = (alert: {
+            title?: string;
+            message?: string;
+        }) => {
+            toast.warning(alert?.title || "Low stock alert", {
+                description: alert?.message,
+            });
+            scheduleLowStockRefresh();
+        };
+
+        const handleStockUpdated = () => {
+            scheduleLowStockRefresh();
+        };
+
         socket.on("connect", handleConnect);
         socket.on("disconnect", handleDisconnect);
         socket.on("connect_error", handleConnectError);
         socket.on(ADMIN_NOTIFICATION_EVENT, handleNotification);
+        socket.on(ADMIN_STOCK_ALERT_EVENT, handleStockAlert);
+        socket.on(ADMIN_STOCK_UPDATED_EVENT, handleStockUpdated);
 
         void refreshNotifications();
+        void refreshLowStockCount();
 
         return () => {
             clearRetryTimer();
+            if (lowStockRefreshTimerRef.current) {
+                window.clearTimeout(lowStockRefreshTimerRef.current);
+                lowStockRefreshTimerRef.current = null;
+            }
             socket.off("connect", handleConnect);
             socket.off("disconnect", handleDisconnect);
             socket.off("connect_error", handleConnectError);
             socket.off(ADMIN_NOTIFICATION_EVENT, handleNotification);
+            socket.off(ADMIN_STOCK_ALERT_EVENT, handleStockAlert);
+            socket.off(ADMIN_STOCK_UPDATED_EVENT, handleStockUpdated);
             disconnectAdminSocket();
         };
-    }, [refreshNotifications]);
+    }, [refreshNotifications, refreshLowStockCount, scheduleLowStockRefresh]);
 
     useEffect(() => {
         if (!notificationsOpen) return;
@@ -244,9 +301,22 @@ const AdminLayout = () => {
         navigate(`/admin/orders/${notification.order}`);
     };
 
-    const navItems = [
+    const navItems: Array<{
+        name: string;
+        href: string;
+        icon: typeof LayoutDashboard;
+        end: boolean;
+        badge?: number;
+    }> = [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard, end: true },
         { name: "Products", href: "/admin/products", icon: ShoppingBag, end: false },
+        {
+            name: "Inventory",
+            href: "/admin/inventory",
+            icon: Boxes,
+            end: false,
+            badge: outOfStockCount,
+        },
         { name: "Catalog", href: "/admin/catalog", icon: Tags, end: false },
         { name: "Orders", href: "/admin/orders", icon: Package, end: false },
         { name: "Discounts", href: "/admin/discounts", icon: BadgePercent, end: false },
@@ -320,6 +390,14 @@ const AdminLayout = () => {
                             >
                                 <Icon className="w-4 h-4 shrink-0" />
                                 <span>{item.name}</span>
+                                {item.badge ? (
+                                    <span
+                                        title={`${item.badge} inventory row(s) out of stock`}
+                                        className="ml-auto min-w-5 rounded-full bg-red-600 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white"
+                                    >
+                                        {item.badge > 99 ? "99+" : item.badge}
+                                    </span>
+                                ) : null}
                             </NavLink>
                         );
                     })}

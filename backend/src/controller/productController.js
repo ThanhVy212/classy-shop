@@ -6,6 +6,7 @@ import {
   normalizeVariants,
   sumVariantStock,
 } from "../services/variantService.js";
+import { recordProductStockDiff } from "../services/inventoryService.js";
 
 const normalizeStringList = (values) => {
   if (!Array.isArray(values)) return [];
@@ -189,6 +190,13 @@ export const createProduct = async (req, res) => {
 
     const createdProduct = await product.save();
     await syncProductCatalog(createdProduct);
+    await recordProductStockDiff({
+      product: createdProduct,
+      previousProduct: null,
+      performedBy: req.user._id,
+      performedByName: req.user.name || req.user.email || "Administrator",
+      reason: "Product created",
+    });
     res.status(201).json(createdProduct);
   } catch (e) {
     if (e?.status === 400) {
@@ -235,6 +243,18 @@ export const updateProduct = async (req, res) => {
       });
     }
 
+    // Snapshot stock before applying the form changes so differences can be
+    // written to the inventory history after saving.
+    const previousStockSnapshot = {
+      countInStock: product.countInStock,
+      variants: (product.variants ?? []).map((variant) => ({
+        size: variant.size,
+        color: variant.color,
+        stock: variant.stock,
+        sku: variant.sku,
+      })),
+    };
+
     const nextSizes =
       sizes !== undefined ? normalizeStringList(sizes) : product.sizes;
     const nextColors =
@@ -276,6 +296,13 @@ export const updateProduct = async (req, res) => {
     // Save updated product
     const updatedProduct = await product.save();
     await syncProductCatalog(updatedProduct);
+    await recordProductStockDiff({
+      product: updatedProduct,
+      previousProduct: previousStockSnapshot,
+      performedBy: req.user._id,
+      performedByName: req.user.name || req.user.email || "Administrator",
+      reason: "Product details updated",
+    });
 
     return res.status(200).json({
       message: "Product updated successfully",
