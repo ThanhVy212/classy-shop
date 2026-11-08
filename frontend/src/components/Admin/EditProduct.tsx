@@ -8,6 +8,8 @@ import {
     Save,
     Loader2,
     Boxes,
+    Plus,
+    Star,
 } from "lucide-react";
 import Button from "../Common/Button.tsx";
 import { toast } from "sonner";
@@ -110,7 +112,10 @@ const EditProduct = () => {
     const isEditMode = Boolean(id);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const colorFileInputRef = useRef<HTMLInputElement | null>(null);
+    const colorUploadTargetRef = useRef<string | null>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [uploadingColor, setUploadingColor] = useState<string | null>(null);
 
     const [formData, setFormData] = useState(() => {
         const initialSku = isEditMode
@@ -141,10 +146,12 @@ const EditProduct = () => {
                 initialSku,
             ),
             images: [] as string[],
+            colorImages: {} as Record<string, string>,
         };
     });
 
     const [imageUrlInput, setImageUrlInput] = useState("");
+    const [colorUrlInputs, setColorUrlInputs] = useState<Record<string, string>>({});
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
@@ -181,6 +188,15 @@ const EditProduct = () => {
                                       Number(prod.countInStock) || 0,
                                   );
 
+                        const colorImageMap: Record<string, string> = {};
+                        (prod.colorImages ?? []).forEach((entry) => {
+                            const color = String(entry?.color ?? "").trim();
+                            const url = entry?.images?.[0]?.url;
+                            if (color && url) {
+                                colorImageMap[color] = url;
+                            }
+                        });
+
                         setFormData({
                             name: prod.name || "",
                             sku: prod.sku || "",
@@ -205,6 +221,7 @@ const EditProduct = () => {
                                     : prod.image
                                     ? [prod.image]
                                     : [],
+                            colorImages: colorImageMap,
                         });
                     }
                 })
@@ -242,13 +259,23 @@ const EditProduct = () => {
 
     const toggleColor = (colorName: string) => {
         setFormData((prev) => {
-            const colors = prev.colors.includes(colorName)
+            const removing = prev.colors.includes(colorName);
+            const colors = removing
                 ? prev.colors.filter((c) => c !== colorName)
                 : [...prev.colors, colorName];
+
+            const colorImages = removing
+                ? Object.fromEntries(
+                      Object.entries(prev.colorImages).filter(
+                          ([color]) => color !== colorName,
+                      ),
+                  )
+                : prev.colorImages;
 
             return {
                 ...prev,
                 colors,
+                colorImages,
                 variants: buildVariantMatrix(
                     prev.sizes,
                     colors,
@@ -296,10 +323,33 @@ const EditProduct = () => {
     };
 
     const handleRemoveImage = (indexToRemove: number) => {
-        setFormData((prev) => ({
-            ...prev,
-            images: prev.images.filter((_, idx) => idx !== indexToRemove),
-        }));
+        setFormData((prev) => {
+            const removedUrl = prev.images[indexToRemove];
+            const images = prev.images.filter((_, idx) => idx !== indexToRemove);
+
+            // Keep color assignments in sync: an image that no longer exists in
+            // the product gallery must not be used as a color's main image.
+            const colorImages = Object.fromEntries(
+                Object.entries(prev.colorImages).filter(
+                    ([, url]) => url !== removedUrl,
+                ),
+            );
+
+            return { ...prev, images, colorImages };
+        });
+    };
+
+    const handleSetCoverImage = (index: number) => {
+        if (index === 0) return;
+
+        setFormData((prev) => {
+            const images = [...prev.images];
+            const [cover] = images.splice(index, 1);
+            images.unshift(cover);
+
+            return { ...prev, images };
+        });
+        toast.success("Cover image updated");
     };
 
     const handleTriggerFileInput = () => {
@@ -339,6 +389,98 @@ const EditProduct = () => {
             setIsUploadingImage(false);
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
+            }
+        }
+    };
+
+    const assignImageToColor = (color: string, url: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            colorImages: { ...prev.colorImages, [color]: url },
+        }));
+    };
+
+    const unassignImageFromColor = (color: string) => {
+        setFormData((prev) => {
+            const colorImages = { ...prev.colorImages };
+            delete colorImages[color];
+
+            return { ...prev, colorImages };
+        });
+    };
+
+    const handleColorUrlInputChange = (color: string, value: string) => {
+        setColorUrlInputs((prev) => ({ ...prev, [color]: value }));
+    };
+
+    const handleAddColorImageUrl = (color: string) => {
+        const url = (colorUrlInputs[color] ?? "").trim();
+        if (!url) return;
+
+        setFormData((prev) => {
+            const gallery = prev.images.includes(url)
+                ? prev.images
+                : [...prev.images, url];
+
+            return {
+                ...prev,
+                images: gallery,
+                colorImages: { ...prev.colorImages, [color]: url },
+            };
+        });
+        setColorUrlInputs((prev) => ({ ...prev, [color]: "" }));
+        toast.success(`Main image set for ${color}`);
+    };
+
+    const handleTriggerColorFileInput = (color: string) => {
+        if (isUploadingImage || uploadingColor) return;
+        colorUploadTargetRef.current = color;
+        colorFileInputRef.current?.click();
+    };
+
+    const handleColorFileInputChange = async (
+        e: React.ChangeEvent<HTMLInputElement>,
+    ) => {
+        const files = e.target.files;
+        const color = colorUploadTargetRef.current;
+        if (!files || files.length === 0 || !color) return;
+
+        const file = files[0];
+        setUploadingColor(color);
+        const toastId = toast.loading(`Uploading image for ${color}...`);
+
+        try {
+            const uploaded = await uploadService.uploadMultipleImages([file]);
+            const newUrl = uploaded[0]?.url;
+
+            if (newUrl) {
+                setFormData((prev) => {
+                    const gallery = prev.images.includes(newUrl)
+                        ? prev.images
+                        : [...prev.images, newUrl];
+
+                    return {
+                        ...prev,
+                        images: gallery,
+                        colorImages: { ...prev.colorImages, [color]: newUrl },
+                    };
+                });
+                toast.success(`Main image set for ${color}!`, { id: toastId });
+            } else {
+                toast.error("Failed to upload image.", { id: toastId });
+            }
+        } catch (error: unknown) {
+            console.error("Upload color image error:", error);
+            const errResponse = (error as { response?: { data?: { message?: string } } })?.response;
+            const message =
+                errResponse?.data?.message ||
+                "Failed to upload image from machine. Please try again.";
+            toast.error(message, { id: toastId });
+        } finally {
+            setUploadingColor(null);
+            colorUploadTargetRef.current = null;
+            if (colorFileInputRef.current) {
+                colorFileInputRef.current.value = "";
             }
         }
     };
@@ -386,6 +528,23 @@ const EditProduct = () => {
                 })),
                 collections: "Business Casual",
                 images: formData.images.map((url) => ({ url, altText: formData.name })),
+                colorImages: formData.colors
+                    .map((color) => {
+                        const url = formData.colorImages[color];
+
+                        return {
+                            color,
+                            images: url
+                                ? [
+                                      {
+                                          url,
+                                          altText: `${formData.name} - ${color}`,
+                                      },
+                                  ]
+                                : [],
+                        };
+                    })
+                    .filter((entry) => entry.images.length > 0),
                 isPublished: true,
             };
 
@@ -804,7 +963,7 @@ const EditProduct = () => {
                         <div>
                             <h2 className="card-title">Product Images Gallery</h2>
                             <p className="text-xs text-gray-500 mt-0.5">
-                                Click &quot;Add More&quot; to upload images directly from your computer or paste image URLs.
+                                Click &quot;Add More&quot; to upload images directly from your computer or paste image URLs. Hover any image and click &quot;Set as cover&quot; to change the main cover image.
                             </p>
                         </div>
                     </div>
@@ -854,6 +1013,17 @@ const EditProduct = () => {
                                         Cover
                                     </span>
                                 )}
+                                {index !== 0 && (
+                                    <Button
+                                        type="button"
+                                        onClick={() => handleSetCoverImage(index)}
+                                        className="absolute bottom-2 left-2 right-2 inline-flex items-center justify-center gap-1 rounded-lg bg-black/80 px-2 py-1 text-[10px] font-bold text-white opacity-100 transition-opacity hover:bg-black sm:opacity-0 sm:group-hover:opacity-100"
+                                        title="Set as cover image"
+                                    >
+                                        <Star className="w-3 h-3" />
+                                        Set as cover
+                                    </Button>
+                                )}
                                 <Button
                                     type="button"
                                     onClick={() => handleRemoveImage(index)}
@@ -887,6 +1057,204 @@ const EditProduct = () => {
                                 </>
                             )}
                         </div>
+                    </div>
+
+                    {/* Images by color */}
+                    <div className="border-t border-gray-100 pt-6 space-y-4">
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-900">
+                                Main image by color
+                            </h3>
+                            <p className="mt-0.5 text-xs text-gray-500">
+                                Pick one image for each color. The image stays in the
+                                Product Images Gallery above; when a shopper selects that
+                                color, it becomes the main image. Leave a color empty to
+                                use the first gallery image.
+                            </p>
+                        </div>
+
+                        <input
+                            ref={colorFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleColorFileInputChange}
+                            className="hidden"
+                        />
+
+                        {formData.colors.length === 0 ? (
+                            <p className="rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-4 text-xs text-gray-500">
+                                Select at least one color in the Product Variants section
+                                to assign a main image.
+                            </p>
+                        ) : (
+                            <div className="space-y-4">
+                                {formData.colors.map((color) => {
+                                    const assignedUrl = formData.colorImages[color];
+
+                                    return (
+                                        <div
+                                            key={color}
+                                            className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4"
+                                        >
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span
+                                                        className="h-4 w-4 shrink-0 rounded-full border border-gray-300"
+                                                        style={getColorStyle(color)}
+                                                    />
+                                                    <span className="text-sm font-bold text-gray-900">
+                                                        {color}
+                                                    </span>
+                                                    <span className="rounded-lg bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
+                                                        {assignedUrl
+                                                            ? "1 image selected"
+                                                            : "No image selected"}
+                                                    </span>
+                                                </div>
+
+                                                <Button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleTriggerColorFileInput(color)
+                                                    }
+                                                    disabled={
+                                                        isUploadingImage ||
+                                                        uploadingColor !== null
+                                                    }
+                                                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-black disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
+                                                    {uploadingColor === color ? (
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    ) : (
+                                                        <UploadCloud className="h-3.5 w-3.5" />
+                                                    )}
+                                                    {uploadingColor === color
+                                                        ? "Uploading..."
+                                                        : "Upload"}
+                                                </Button>
+                                            </div>
+
+                                            {assignedUrl ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                                                        <img
+                                                            src={assignedUrl}
+                                                            alt={`${color} main preview`}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                        <span className="absolute left-1.5 top-1.5 rounded-md bg-black px-1.5 py-0.5 text-[9px] font-bold text-white">
+                                                            Main
+                                                        </span>
+                                                        <Button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                unassignImageFromColor(
+                                                                    color,
+                                                                )
+                                                            }
+                                                            className="absolute right-1.5 top-1.5 rounded-full bg-red-600 p-1 text-white opacity-0 shadow-sm transition-opacity hover:bg-red-700 group-hover:opacity-100"
+                                                            title={`Remove main image for ${color}`}
+                                                        >
+                                                            <X className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500">
+                                                        This photo is shown as the main image
+                                                        when <strong>{color}</strong> is
+                                                        selected.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-gray-500">
+                                                    No main image set — the first gallery
+                                                    image will be used for this color.
+                                                </p>
+                                            )}
+
+                                            <div>
+                                                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-500">
+                                                    Choose from gallery
+                                                </p>
+                                                {formData.images.length > 0 ? (
+                                                    <div className="grid grid-cols-5 gap-2 sm:grid-cols-8">
+                                                        {formData.images.map((url, index) => {
+                                                            const isSelected =
+                                                                assignedUrl === url;
+
+                                                            return (
+                                                                <button
+                                                                    type="button"
+                                                                    key={`${url}-${index}`}
+                                                                    onClick={() =>
+                                                                        assignImageToColor(
+                                                                            color,
+                                                                            url,
+                                                                        )
+                                                                    }
+                                                                    className={`group relative aspect-square overflow-hidden rounded-xl border bg-gray-50 transition ${
+                                                                        isSelected
+                                                                            ? "border-black ring-2 ring-black"
+                                                                            : "border-gray-200 hover:border-black"
+                                                                    }`}
+                                                                    title={
+                                                                        isSelected
+                                                                            ? `Current main image for ${color}`
+                                                                            : `Set as main image for ${color}`
+                                                                    }
+                                                                >
+                                                                    <img
+                                                                        src={url}
+                                                                        alt={`Gallery option for ${color}`}
+                                                                        className="h-full w-full object-cover"
+                                                                    />
+                                                                    {isSelected ? (
+                                                                        <span className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                                                            <Check className="h-5 w-5 text-white" />
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                                                            <Plus className="h-5 w-5 text-white" />
+                                                                        </span>
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-gray-500">
+                                                        Add images to the gallery above first.
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="url"
+                                                    value={colorUrlInputs[color] ?? ""}
+                                                    onChange={(event) =>
+                                                        handleColorUrlInputChange(
+                                                            color,
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    placeholder={`Paste an image URL for ${color}`}
+                                                    className="form-input flex-1"
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleAddColorImageUrl(color)
+                                                    }
+                                                    className="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-semibold text-gray-800 transition hover:bg-gray-200"
+                                                >
+                                                    Set URL
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
 

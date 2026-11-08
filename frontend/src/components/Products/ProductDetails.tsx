@@ -10,6 +10,7 @@ import { useCart } from "../../hooks/useCart.ts";
 import type { Product } from "../../types/product.ts";
 import { sampleSelectedProduct } from "../../constants";
 import { getColorStyle } from "../../utils/colors.ts";
+import { getImagesForColor } from "../../utils/productImages.ts";
 import {
   findFirstInStockVariant,
   getAvailableStock,
@@ -118,6 +119,18 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
       isMounted = false;
     };
   }, [targetId]);
+
+  // Keep the main image in sync with the selected color. The gallery itself
+  // keeps showing every product image; only the main image changes to the
+  // photo assigned to the selected color.
+  useEffect(() => {
+    if (!product) return;
+
+    const colorGallery = getImagesForColor(product, selectedColor);
+    const fallbackImage = product.images?.[0]?.url || product.image || "";
+
+    setMainImage(colorGallery[0]?.url || fallbackImage);
+  }, [product, selectedColor]);
 
   const handleQuantityChange = (action: "plus" | "minus") => {
     if (action === "plus") {
@@ -247,12 +260,12 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
           {/* Main Image with Zoom */}
           <div className="md:w-1/2">
             <ProductImageZoom
-              src={mainImage || images[0].url}
+              src={mainImage || images[0]?.url || ""}
               alt={product.name}
               images={images}
               currentIndex={Math.max(
                 0,
-                images.findIndex((img) => img.url === (mainImage || images[0].url))
+                images.findIndex((img) => img.url === (mainImage || images[0]?.url))
               )}
               onSelectImage={(idx) => {
                 if (images[idx]) {
@@ -320,6 +333,15 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
                         onClick={() => {
                           setSelectedColor(color);
                           setQuantity(1);
+
+                          const colorImage = getImagesForColor(product, color)[0]
+                            ?.url;
+                          setMainImage(
+                            colorImage ||
+                              product.images?.[0]?.url ||
+                              product.image ||
+                              "",
+                          );
                         }}
                         title={
                           colorHasAnyStock

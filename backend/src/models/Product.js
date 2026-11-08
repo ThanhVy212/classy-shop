@@ -102,6 +102,29 @@ const productSchema = new mongoose.Schema(
         },
       },
     ],
+    // Optional main image per color. Each entry maps a color from `colors` to
+    // the single image that should become the main image when a shopper selects
+    // that color. When a color has no entry the first `images` entry is used.
+    colorImages: [
+      {
+        color: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        images: [
+          {
+            url: {
+              type: String,
+              required: true,
+            },
+            altText: {
+              type: String,
+            },
+          },
+        ],
+      },
+    ],
     isFeatured: {
       type: Boolean,
       default: false,

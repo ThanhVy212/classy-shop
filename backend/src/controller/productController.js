@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Product from "../models/Product.js";
+import Order from "../models/Order.js";
 import { validateObjectId } from "../middlewares/validate.js";
 import { ensureCatalogItems } from "../services/catalogService.js";
 import {
@@ -18,6 +19,58 @@ const normalizeStringList = (values) => {
         .filter(Boolean),
     ),
   );
+};
+
+const normalizeImageList = (images) => {
+  if (!Array.isArray(images)) return [];
+
+  return images
+    .map((image) => {
+      if (typeof image === "string") {
+        const url = image.trim();
+        return url ? { url } : null;
+      }
+
+      const url = String(image?.url ?? "").trim();
+      if (!url) return null;
+
+      const altText = String(image?.altText ?? "").trim();
+
+      return altText ? { url, altText } : { url };
+    })
+    .filter(Boolean);
+};
+
+/**
+ * Keep only color entries whose color is still part of the product and that
+ * have an image. Only the first image is kept so each color has exactly one
+ * main image. Colors are compared case-insensitively and the first entry wins.
+ */
+const normalizeColorImages = (colorImages, colors) => {
+  if (!Array.isArray(colorImages)) return [];
+
+  const allowedColors = new Set(
+    normalizeStringList(colors).map((color) => color.toLowerCase()),
+  );
+  const seenColors = new Set();
+
+  return colorImages.reduce((result, entry) => {
+    const color = String(entry?.color ?? "").trim();
+    const colorKey = color.toLowerCase();
+
+    if (!color || !allowedColors.has(colorKey) || seenColors.has(colorKey)) {
+      return result;
+    }
+
+    const image = normalizeImageList(entry?.images)[0];
+
+    if (!image) return result;
+
+    seenColors.add(colorKey);
+    result.push({ color, images: [image] });
+
+    return result;
+  }, []);
 };
 
 const syncProductCatalog = async (product) => {
@@ -145,6 +198,7 @@ export const createProduct = async (req, res) => {
       material,
       gender,
       images,
+      colorImages,
       isFeatured,
       isPublished = true,
       tags,
@@ -159,6 +213,10 @@ export const createProduct = async (req, res) => {
     const normalizedVariants = normalizeVariants(
       variants ?? [],
       normalizedSizes,
+      normalizedColors,
+    );
+    const normalizedColorImages = normalizeColorImages(
+      colorImages,
       normalizedColors,
     );
 
@@ -179,6 +237,7 @@ export const createProduct = async (req, res) => {
       material,
       gender,
       images,
+      colorImages: normalizedColorImages,
       isFeatured,
       isPublished,
       tags,
@@ -224,6 +283,7 @@ export const updateProduct = async (req, res) => {
       material,
       gender,
       images,
+      colorImages,
       isFeatured,
       isPublished,
       tags,
@@ -277,6 +337,20 @@ export const updateProduct = async (req, res) => {
     product.material = material ?? product.material;
     product.gender = gender ?? product.gender;
     product.images = images ?? product.images;
+
+    if (colorImages !== undefined) {
+      product.colorImages = normalizeColorImages(colorImages, nextColors);
+    } else if (colors !== undefined) {
+      // Colors were edited without resubmitting color galleries: drop the
+      // galleries that no longer belong to an available color.
+      const allowedColors = new Set(
+        nextColors.map((color) => color.toLowerCase()),
+      );
+      product.colorImages = (product.colorImages ?? []).filter((entry) =>
+        allowedColors.has(String(entry.color ?? "").trim().toLowerCase()),
+      );
+    }
+
     product.isFeatured = isFeatured ?? product.isFeatured;
     product.isPublished = isPublished ?? product.isPublished;
     product.tags = tags ?? product.tags;
@@ -677,12 +751,51 @@ export const getSimilarProductById = async (req, res) => {
 
 export const getBestsellerProduct = async (req, res) => {
   try {
-    const bestSeller = await Product.findOne().sort({ rating: -1 });
+    // Rank products by the number of units sold across non-cancelled orders
+    // instead of by rating. Deleted or unpublished products are skipped.
+    const [topSeller] = await Order.aggregate([
+      { $match: { orderStatus: { $ne: "Cancelled" } } },
+      { $unwind: "$orderItems" },
+      {
+        $group: {
+          _id: "$orderItems.productId",
+          sales: {
+            $sum: { $ifNull: ["$orderItems.quantity", 0] },
+          },
+        },
+      },
+      { $match: { sales: { $gt: 0 } } },
+      { $sort: { sales: -1, _id: 1 } },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+      { $match: { "product.isPublished": { $ne: false } } },
+      { $sort: { sales: -1, _id: 1 } },
+      { $limit: 1 },
+    ]);
+
+    let bestSeller = topSeller?.product ?? null;
+    const unitsSold = topSeller?.sales || 0;
+
+    // Fallback for a brand-new store with no sales yet, so the endpoint still
+    // returns a product instead of a 404.
+    if (!bestSeller) {
+      bestSeller = await Product.findOne({
+        isPublished: { $ne: false },
+      }).sort({ rating: -1, createdAt: -1 });
+    }
+
     if (!bestSeller) {
       return res.status(404).json({ message: "No best seller found" });
     }
 
-    return res.status(200).json({ bestSeller });
+    return res.status(200).json({ bestSeller, unitsSold });
   } catch (error) {
     console.error("Get best seller product error:", error);
     return res.status(500).json({
