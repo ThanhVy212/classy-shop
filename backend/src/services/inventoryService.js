@@ -10,7 +10,6 @@ import {
 import {
   findVariant,
   hasVariants,
-  sumVariantStock,
   variantKey,
 } from "./variantService.js";
 
@@ -46,24 +45,58 @@ export const getStockStatus = (stock, threshold = getLowStockThreshold()) => {
   return "in_stock";
 };
 
+const INCREASE_MODE_ALIASES = [
+  "increase",
+  "in",
+  "import",
+  "add",
+  "receive",
+];
+
+const DECREASE_MODE_ALIASES = [
+  "decrease",
+  "out",
+  "export",
+  "subtract",
+  "remove",
+  "issue",
+];
+
+const SET_MODE_ALIASES = [
+  "set",
+  "stocktake",
+  "stock take",
+  "stock-take",
+  "count",
+  "absolute",
+  "overwrite",
+];
+
+/**
+ * Maps a user/CSV supplied mode to set | increase | decrease. A blank mode is
+ * treated as "set" because the CSV mode column is optional, but unknown values
+ * are rejected so a typo can never silently overwrite real stock.
+ */
 const normalizeMode = (mode) => {
   const value = String(mode ?? "")
     .trim()
     .toLowerCase();
 
-  if (["increase", "in", "import", "add", "receive"].includes(value)) {
+  if (value === "" || SET_MODE_ALIASES.includes(value)) {
+    return "set";
+  }
+
+  if (INCREASE_MODE_ALIASES.includes(value)) {
     return "increase";
   }
 
-  if (
-    ["decrease", "out", "export", "subtract", "remove", "issue"].includes(
-      value,
-    )
-  ) {
+  if (DECREASE_MODE_ALIASES.includes(value)) {
     return "decrease";
   }
 
-  return "set";
+  throw createHttpError(
+    `Unknown stock mode "${String(mode).trim()}". Use set, increase or decrease.`,
+  );
 };
 
 const getMovementType = (mode, fallbackType) => {
@@ -682,38 +715,42 @@ export const applyStockChange = async ({
         };
       }
 
-      const result = await Product.updateOne(
+      // Move the variant and the product total together in one conditional
+      // update. Matching on the expected previous stock prevents a concurrent
+      // change from being overwritten or recorded with the wrong delta.
+      const delta = requestedValue - previousStock;
+
+      updatedProduct = await Product.findOneAndUpdate(
         {
           _id: product._id,
           variants: {
-            $elemMatch: { size: variant.size, color: variant.color },
+            $elemMatch: {
+              size: variant.size,
+              color: variant.color,
+              stock: previousStock,
+            },
           },
         },
-        { $set: { "variants.$.stock": requestedValue } },
+        {
+          $set: { "variants.$.stock": requestedValue },
+          $inc: { countInStock: delta },
+        },
+        { new: true, projection: INVENTORY_PROJECTION },
       );
 
-      if (!result.modifiedCount) {
+      if (!updatedProduct) {
         throw createHttpError(
           "This variant could not be updated. Refresh and try again.",
           409,
         );
       }
 
-      updatedProduct = await Product.findById(product._id)
-        .select(INVENTORY_PROJECTION)
-        .lean();
-
-      if (!updatedProduct) {
-        throw createHttpError("Product not found.", 404);
-      }
-
-      newStock = requestedValue;
-      const nextTotal = sumVariantStock(updatedProduct.variants);
-      await Product.updateOne(
-        { _id: product._id },
-        { $set: { countInStock: nextTotal } },
+      const updatedVariant = findVariant(
+        updatedProduct,
+        variant.size,
+        variant.color,
       );
-      updatedProduct.countInStock = nextTotal;
+      newStock = normalizeStock(updatedVariant?.stock ?? requestedValue);
     } else {
       const delta =
         normalizedMode === "increase" ? requestedValue : -requestedValue;
@@ -768,16 +805,20 @@ export const applyStockChange = async ({
         };
       }
 
-      newStock = requestedValue;
       updatedProduct = await Product.findOneAndUpdate(
-        { _id: product._id },
-        { $set: { countInStock: newStock } },
+        { _id: product._id, countInStock: previousStock },
+        { $set: { countInStock: requestedValue } },
         { new: true, projection: INVENTORY_PROJECTION },
       );
 
       if (!updatedProduct) {
-        throw createHttpError("Product not found.", 404);
+        throw createHttpError(
+          "This stock value could not be updated. Refresh and try again.",
+          409,
+        );
       }
+
+      newStock = normalizeStock(updatedProduct.countInStock);
     } else {
       const delta =
         normalizedMode === "increase" ? requestedValue : -requestedValue;
@@ -865,11 +906,15 @@ export const applyStockChange = async ({
  * type "order_out" is called after stock was reserved, so the product already
  * holds the post-sale count. type "order_return" is called after a cancelled
  * order restored stock. Both together give a complete in/out history.
+ *
+ * `performedBy` / `performedByName` let an administrator cancellation be
+ * attributed to that admin instead of the customer who placed the order.
  */
 export const recordOrderStockMovements = async ({
   order,
   items = [],
   type = "order_out",
+  performedBy = null,
   performedByName = "",
 }) => {
   if (!order?._id || !Array.isArray(items) || items.length === 0) return [];
@@ -951,7 +996,7 @@ export const recordOrderStockMovements = async ({
         note: "",
         reference: order.orderNumber || "",
         order: order._id,
-        performedBy: order.user?._id || order.user || null,
+        performedBy: performedBy || order.user?._id || order.user || null,
         performedByName:
           performedByName ||
           order.shippingAddress?.fullName ||
@@ -1005,6 +1050,59 @@ export const recordOrderStockMovements = async ({
   }
 };
 
+/**
+ * Builds a local-day boundary from "YYYY-MM-DD" style input. Date-only
+ * strings are parsed as UTC by `new Date`, which can shift the day for
+ * timezones behind UTC, so the components are fed into the Date constructor
+ * (which uses local time) instead.
+ *
+ * Returns null for blank or invalid dates so the caller can ignore them.
+ */
+const parseLocalDayBound = (value, endOfDay = false) => {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+
+  const hours = endOfDay ? 23 : 0;
+  const minutes = endOfDay ? 59 : 0;
+  const seconds = endOfDay ? 59 : 0;
+  const milliseconds = endOfDay ? 999 : 0;
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+
+  if (!match) {
+    const parsed = new Date(text);
+    if (Number.isNaN(parsed.getTime())) return null;
+    parsed.setHours(hours, minutes, seconds, milliseconds);
+    return parsed;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(
+    year,
+    month - 1,
+    day,
+    hours,
+    minutes,
+    seconds,
+    milliseconds,
+  );
+
+  // Reject out-of-range components such as 2026-02-31, which the Date
+  // constructor would otherwise silently roll over into March.
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+};
+
 export const listInventoryHistory = async ({
   page = 1,
   limit = 20,
@@ -1028,19 +1126,13 @@ export const listInventoryHistory = async ({
     filter.createdAt = {};
 
     if (from) {
-      const start = new Date(from);
-      if (!Number.isNaN(start.getTime())) {
-        start.setHours(0, 0, 0, 0);
-        filter.createdAt.$gte = start;
-      }
+      const start = parseLocalDayBound(from, false);
+      if (start) filter.createdAt.$gte = start;
     }
 
     if (to) {
-      const end = new Date(to);
-      if (!Number.isNaN(end.getTime())) {
-        end.setHours(23, 59, 59, 999);
-        filter.createdAt.$lte = end;
-      }
+      const end = parseLocalDayBound(to, true);
+      if (end) filter.createdAt.$lte = end;
     }
 
     if (Object.keys(filter.createdAt).length === 0) {

@@ -914,6 +914,8 @@ export const updateOrderStatus = async (req, res) => {
         order: updatedOrder,
         items: updatedOrder.orderItems,
         type: "order_return",
+        performedBy: req.user._id,
+        performedByName: req.user.name || req.user.email || "Administrator",
       });
 
       const populatedOrder = await Order.findById(updatedOrder._id).populate(

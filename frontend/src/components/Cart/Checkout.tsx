@@ -150,6 +150,14 @@ const Checkout = () => {
 
     const hasRequestedCart = useRef(false);
     const hasAppliedDefaultAddress = useRef(false);
+    // Mirrors selectedAddressId so async callbacks can read the latest
+    // selection instead of the value captured when the request started.
+    const selectedAddressIdRef = useRef<string | null>(null);
+
+    const updateSelectedAddressId = (addressId: string | null) => {
+        selectedAddressIdRef.current = addressId;
+        setSelectedAddressId(addressId);
+    };
 
     const applyAddressToForm = (address: ShippingAddress) => {
         const { firstName, lastName } = splitFullName(address.fullName);
@@ -170,13 +178,13 @@ const Checkout = () => {
     };
 
     const handleSelectAddress = (address: ShippingAddress) => {
-        setSelectedAddressId(address._id);
+        updateSelectedAddressId(address._id);
         setSaveAsDefault(address.isDefault);
         applyAddressToForm(address);
     };
 
     const handleUseNewAddress = () => {
-        setSelectedAddressId(null);
+        updateSelectedAddressId(null);
         setSaveAsDefault(addresses.length === 0);
         setValue("address", "");
         setValue("apartment", "");
@@ -194,7 +202,9 @@ const Checkout = () => {
                 current ? { ...current, addresses: updated } : current
             );
 
-            const matched = updated.find((a) => a._id === selectedAddressId);
+            const matched = updated.find(
+                (a) => a._id === selectedAddressIdRef.current
+            );
             setSaveAsDefault(matched ? matched.isDefault : false);
 
             toast.success("Default delivery address updated");
@@ -300,7 +310,7 @@ const Checkout = () => {
         const preferred =
             addresses.find((address) => address.isDefault) ?? addresses[0];
 
-        setSelectedAddressId(preferred._id);
+        updateSelectedAddressId(preferred._id);
         setSaveAsDefault(preferred.isDefault);
         applyAddressToForm(preferred);
         // Only run when the saved addresses first arrive.
