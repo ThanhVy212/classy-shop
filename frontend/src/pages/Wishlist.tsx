@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Heart, ImageOff, ShoppingBag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "../components/Common/Button.tsx";
+import OptimizedImage from "../components/Common/OptimizedImage.tsx";
 import { useWishlist } from "../hooks/useWishlist.ts";
 import { getApiErrorMessage } from "../utils/apiError.ts";
 
@@ -176,9 +177,12 @@ const Wishlist = () => {
                     <div className="relative aspect-[3/4] overflow-hidden bg-[var(--color-surface-muted)]">
                       <Link to={`/products/${productId}`} className="block h-full w-full">
                         {imageUrl ? (
-                          <img
+                          <OptimizedImage
                             src={imageUrl}
                             alt={product.name}
+                            widths={[240, 320, 480, 640, 800]}
+                            sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                            crop="fill"
                             className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                             loading="lazy"
                           />

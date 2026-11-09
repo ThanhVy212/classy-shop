@@ -146,31 +146,36 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
         (item) => item.productId === productId,
       );
 
-      if (isAuthenticated) {
+      // Optimistically flip the heart so the UI reacts instantly.
+      const previous = items;
+      const optimistic = currentlyWishlisted
+        ? items.filter((item) => item.productId !== productId)
+        : [
+            {
+              productId,
+              addedAt: new Date().toISOString(),
+              product,
+            },
+            ...items,
+          ].slice(0, MAX_GUEST_ITEMS);
+
+      setItems(optimistic);
+
+      if (!isAuthenticated) {
+        writeGuestWishlist(optimistic);
+        return !currentlyWishlisted;
+      }
+
+      try {
         const next = currentlyWishlisted
           ? await wishlistService.remove(productId)
           : await wishlistService.add(productId);
         setItems(next);
         return !currentlyWishlisted;
+      } catch (error) {
+        setItems(previous);
+        throw error;
       }
-
-      setItems((current) => {
-        const next = currentlyWishlisted
-          ? current.filter((item) => item.productId !== productId)
-          : [
-              {
-                productId,
-                addedAt: new Date().toISOString(),
-                product,
-              },
-              ...current,
-            ].slice(0, MAX_GUEST_ITEMS);
-
-        writeGuestWishlist(next);
-        return next;
-      });
-
-      return !currentlyWishlisted;
     },
     [isAuthenticated, items],
   );
@@ -178,32 +183,46 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({
   const removeFromWishlist = useCallback(
     async (productId: string): Promise<void> => {
       const normalizedId = String(productId);
+      const previous = items;
+      const optimistic = items.filter(
+        (item) => item.productId !== normalizedId,
+      );
 
-      if (isAuthenticated) {
-        const next = await wishlistService.remove(normalizedId);
-        setItems(next);
+      setItems(optimistic);
+
+      if (!isAuthenticated) {
+        writeGuestWishlist(optimistic);
         return;
       }
 
-      setItems((current) => {
-        const next = current.filter((item) => item.productId !== normalizedId);
-        writeGuestWishlist(next);
-        return next;
-      });
+      try {
+        const next = await wishlistService.remove(normalizedId);
+        setItems(next);
+      } catch (error) {
+        setItems(previous);
+        throw error;
+      }
     },
-    [isAuthenticated],
+    [isAuthenticated, items],
   );
 
   const clearWishlist = useCallback(async (): Promise<void> => {
-    if (isAuthenticated) {
-      const next = await wishlistService.clear();
-      setItems(next);
+    const previous = items;
+    setItems([]);
+
+    if (!isAuthenticated) {
+      clearGuestWishlist();
       return;
     }
 
-    clearGuestWishlist();
-    setItems([]);
-  }, [isAuthenticated]);
+    try {
+      const next = await wishlistService.clear();
+      setItems(next);
+    } catch (error) {
+      setItems(previous);
+      throw error;
+    }
+  }, [isAuthenticated, items]);
 
   const refreshWishlist = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) {

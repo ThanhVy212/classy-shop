@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "../../hooks/useCart.ts";
+import OptimizedImage from "../Common/OptimizedImage.tsx";
 import { useAuth } from "../../hooks/useAuth.ts";
 import { useSyncedCart } from "../../hooks/useSyncedCart.ts";
 import type { SyncedCartLine } from "../../hooks/useSyncedCart.ts";
@@ -41,6 +42,7 @@ import type { DiscountValidation } from "../../types/discount.ts";
 import { calculateDiscountPreview } from "../../utils/discount.ts";
 import { getApiErrorMessage } from "../../utils/apiError.ts";
 import Button from "../Common/Button.tsx";
+import { CheckoutSkeleton } from "../Common/Skeletons.tsx";
 
 const getItemKey = (productId: string, size: string, color: string) =>
     `${productId}-${size}-${color}`;
@@ -470,16 +472,7 @@ const Checkout = () => {
     };
 
     if (authLoading || (!cart && cartLoading)) {
-        return (
-            <div className="flex min-h-[70vh] items-center justify-center bg-[var(--color-canvas)]">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-ink-muted)]">
-                        Preparing checkout
-                    </p>
-                </div>
-            </div>
-        );
+        return <CheckoutSkeleton />;
     }
 
     if (!isAuthenticated) {
@@ -1294,9 +1287,12 @@ const Checkout = () => {
                                                 >
                                                     <div className="h-24 w-20 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
                                                         {item.image ? (
-                                                            <img
+                                                            <OptimizedImage
                                                                 src={item.image}
                                                                 alt={item.name}
+                                                                widths={[80, 120, 160]}
+                                                                sizes="80px"
+                                                                crop="fill"
                                                                 className="h-full w-full object-cover"
                                                             />
                                                         ) : (

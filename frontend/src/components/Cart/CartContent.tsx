@@ -1,17 +1,19 @@
 import { Trash2, ShoppingBag } from "lucide-react";
 import Button from "../Common/Button.tsx";
+import { CartContentSkeleton } from "../Common/Skeletons.tsx";
 import { useCart } from "../../hooks/useCart.ts";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { getColorStyle } from "../../utils/colors.ts";
+import OptimizedImage from "../Common/OptimizedImage.tsx";
 
 interface CartContentProps {
   onCloseDrawer?: () => void;
 }
 
 const CartContent = ({ onCloseDrawer }: CartContentProps) => {
-  const { items, updateQuantity, removeFromCart } = useCart();
+  const { items, updateQuantity, removeFromCart, isLoading } = useCart();
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
 
   const getItemKey = (productId: string, size: string, color: string) =>
@@ -56,6 +58,10 @@ const CartContent = ({ onCloseDrawer }: CartContentProps) => {
     }
   };
 
+  if (isLoading && items.length === 0) {
+    return <CartContentSkeleton />;
+  }
+
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
@@ -95,9 +101,12 @@ const CartContent = ({ onCloseDrawer }: CartContentProps) => {
             <div className="flex items-center min-w-0 pr-3">
               <div className="mr-4 flex h-24 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
                 {item.image ? (
-                  <img
+                  <OptimizedImage
                     src={item.image}
                     alt={item.name}
+                    widths={[80, 120, 160]}
+                    sizes="80px"
+                    crop="fill"
                     className="h-full w-full object-cover"
                   />
                 ) : (

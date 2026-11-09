@@ -6,31 +6,34 @@ import ProductDetails from "../components/Products/ProductDetails.tsx";
 import ProductGrid from "../components/Products/ProductGrid.tsx";
 import FeaturedCollection from "../components/Products/FeaturedCollection.tsx";
 import FeaturesSection from "../components/Products/FeaturesSection.tsx";
+import EmptyState from "../components/Common/EmptyState.tsx";
+import { ProductGridSkeleton } from "../components/Common/Skeletons.tsx";
 import { productService } from "../services/productService.ts";
 import type { Product } from "../types/product.ts";
-import { placeholderProducts } from "../constants";
 
 const Home = () => {
   const [womenTopWears, setWomenTopWears] = useState<Product[]>([]);
   const [loadingTopWears, setLoadingTopWears] = useState(true);
+  const [topWearsError, setTopWearsError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
+    setLoadingTopWears(true);
+    setTopWearsError(false);
+
     productService
       .getProducts({ gender: "Women", category: "Top Wear", limit: 4 })
       .then((data) => {
         if (isMounted) {
-          if (data?.products && data.products.length > 0) {
-            setWomenTopWears(data.products);
-          } else {
-            setWomenTopWears(placeholderProducts.slice(0, 4) as unknown as Product[]);
-          }
+          setWomenTopWears(data?.products ?? []);
         }
       })
       .catch((err) => {
         console.warn("Could not fetch top wears for women:", err);
         if (isMounted) {
-          setWomenTopWears(placeholderProducts.slice(0, 4) as unknown as Product[]);
+          setWomenTopWears([]);
+          setTopWearsError(true);
         }
       })
       .finally(() => {
@@ -40,7 +43,7 @@ const Home = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   return (
     <div>
@@ -57,11 +60,26 @@ const Home = () => {
           Top Wears for Women
         </h2>
         {loadingTopWears ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black" />
-          </div>
-        ) : (
+          <ProductGridSkeleton count={4} />
+        ) : womenTopWears.length > 0 ? (
           <ProductGrid products={womenTopWears} />
+        ) : (
+          <EmptyState
+            title={topWearsError ? "Unable to load products" : "No products yet"}
+            description={
+              topWearsError
+                ? "We couldn't reach the catalog. Please try again in a moment."
+                : "Women's top wear is being prepared. Please check back soon."
+            }
+            action={
+              topWearsError
+                ? {
+                    label: "Try again",
+                    onClick: () => setReloadKey((current) => current + 1),
+                  }
+                : { label: "Browse all products", to: "/collections/all" }
+            }
+          />
         )}
       </div>
 

@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import Button from "../Common/Button.tsx";
+import EmptyState from "../Common/EmptyState.tsx";
+import OptimizedImage from "../Common/OptimizedImage.tsx";
 import ProductGrid from "./ProductGrid.tsx";
 import ProductImageZoom from "./ProductImageZoom.tsx";
 import WishlistButton from "./WishlistButton.tsx";
+import { ProductDetailsSkeleton } from "../Common/Skeletons.tsx";
 import { productService } from "../../services/productService.ts";
 import { useCart } from "../../hooks/useCart.ts";
 import type { Product } from "../../types/product.ts";
-import { sampleSelectedProduct } from "../../constants";
 import { getColorStyle } from "../../utils/colors.ts";
+import { isNotFoundError } from "../../utils/apiError.ts";
 import { getImagesForColor } from "../../utils/productImages.ts";
 import {
   findFirstInStockVariant,
@@ -37,10 +40,13 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
   const [quantity, setQuantity] = useState<number>(1);
   const [isAddingToCart, setIsAddingToCart] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<boolean>(false);
+  const [reloadKey, setReloadKey] = useState<number>(0);
 
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
+    setLoadError(false);
 
     const fetchProduct = async () => {
       try {
@@ -86,25 +92,18 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
           } catch (err) {
             console.error("Failed to fetch similar products:", err);
           }
+        } else if (isMounted) {
+          setProduct(null);
         }
       } catch (err) {
-        console.warn(
-          "Could not fetch product from API, using fallback data:",
-          err,
-        );
+        console.warn("Could not fetch product from API:", err);
         if (isMounted) {
-          const fallback = {
-            ...sampleSelectedProduct,
-            _id: targetId || "fallback-best-seller",
-            countInStock: 20,
-            sku: "FALLBACK-SKU",
-            category: "Top Wear",
-            collections: "Business Casual",
-          } as unknown as Product;
-          setProduct(fallback);
-          setMainImage(fallback.images?.[0]?.url || "");
-          if (fallback.sizes?.length) setSelectedSize(fallback.sizes[0]);
-          if (fallback.colors?.length) setSelectedColor(fallback.colors[0]);
+          setProduct(null);
+          setSimilarProducts([]);
+          setMainImage("");
+          // A missing product is not an error: show the "not found" state
+          // without implying the catalog is down.
+          setLoadError(!isNotFoundError(err));
         }
       } finally {
         if (isMounted) {
@@ -118,7 +117,7 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
     return () => {
       isMounted = false;
     };
-  }, [targetId]);
+  }, [targetId, reloadKey]);
 
   // Keep the main image in sync with the selected color. The gallery itself
   // keeps showing every product image; only the main image changes to the
@@ -172,7 +171,22 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
     setIsAddingToCart(true);
 
     try {
-      await addToCart(product._id, selectedSize, selectedColor, quantity);
+      const effectivePrice =
+        product.discountPrice &&
+        product.discountPrice > 0 &&
+        product.discountPrice < product.price
+          ? product.discountPrice
+          : product.price;
+
+      await addToCart(product._id, selectedSize, selectedColor, quantity, {
+        name: product.name,
+        image:
+          mainImage ||
+          product.images?.[0]?.url ||
+          product.image ||
+          "",
+        price: effectivePrice,
+      });
       toast.success(`Added ${quantity} item(s) to cart!`, {
         duration: 2000,
       });
@@ -184,31 +198,65 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
   };
 
   if (isLoading) {
-    return (
-      <div className="bg-[var(--color-canvas)] p-4 sm:p-6">
-        <div className="mx-auto flex min-h-[400px] max-w-6xl items-center justify-center rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
-        </div>
-      </div>
-    );
+    return <ProductDetailsSkeleton />;
   }
 
   if (!product) {
+    if (!targetId) {
+      // Best Seller block on the homepage with no catalog data yet.
+      return (
+        <div className="container mx-auto px-4 lg:px-0">
+          <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <EmptyState
+              compact
+              title={loadError ? "Unable to load best seller" : "No best seller yet"}
+              description={
+                loadError
+                  ? "We couldn't reach the catalog right now. Please try again in a moment."
+                  : "Our best-selling pieces will appear here as soon as products are available."
+              }
+              action={
+                loadError
+                  ? {
+                      label: "Try again",
+                      onClick: () => setReloadKey((current) => current + 1),
+                    }
+                  : { label: "Browse the collection", to: "/collections/all" }
+              }
+            />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-[var(--color-canvas)] p-4 sm:p-6">
         <div className="mx-auto max-w-6xl rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-16 text-center">
           <h2 className="mb-2 text-2xl font-semibold text-[var(--color-ink)]">
-            Product not found
+            {loadError ? "Unable to load product" : "Product not found"}
           </h2>
           <p className="text-sm text-[var(--color-ink-soft)]">
-            The piece you are looking for is no longer available.
+            {loadError
+              ? "We couldn't reach the catalog right now. Please try again in a moment."
+              : "The piece you are looking for is no longer available."}
           </p>
-          <Link
-            to="/collections/all"
-            className="checkout-primary-button mx-auto mt-6 max-w-xs"
-          >
-            Browse the collection
-          </Link>
+          <div className="mx-auto mt-6 flex w-full max-w-sm flex-col gap-2 sm:flex-row">
+            {loadError && (
+              <button
+                type="button"
+                onClick={() => setReloadKey((current) => current + 1)}
+                className="btn-outline flex-1"
+              >
+                Try again
+              </button>
+            )}
+            <Link
+              to="/collections/all"
+              className="checkout-primary-button flex-1"
+            >
+              Browse the collection
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -243,10 +291,13 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
           {/* Left Thumb */}
           <div className="hidden md:flex flex-col space-y-4 mr-6">
             {images.map((image, index) => (
-              <img
+              <OptimizedImage
                 key={image._id || index}
                 src={image.url}
                 alt={image?.altText || `Thumbnail ${index + 1}`}
+                widths={[80, 120, 160]}
+                sizes="80px"
+                crop="fill"
                 className={`w-20 h-20 object-cover rounded-xl cursor-pointer border-2 transition-all duration-300 ease-in-out ${
                   mainImage === image.url
                     ? "scale-110 ring-offset-[var(--color-surface)]"
@@ -278,10 +329,13 @@ const ProductDetails = ({ productId: propProductId }: ProductDetailsProps) => {
           {/* Mobile Thumb */}
           <div className="md:hidden flex overflow-x-auto space-x-4 mb-4 pb-2 better-scrollbar">
             {images.map((image, index) => (
-              <img
+              <OptimizedImage
                 key={image._id || index}
                 src={image.url}
                 alt={image?.altText || `Thumbnail ${index + 1}`}
+                widths={[80, 120, 160]}
+                sizes="80px"
+                crop="fill"
                 className={`w-20 h-20 shrink-0 object-cover rounded-xl cursor-pointer border-2 transition-all duration-300 ease-in-out ${
                   mainImage === image.url
                     ? "scale-105 border-[var(--color-primary)] ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--color-surface)]"

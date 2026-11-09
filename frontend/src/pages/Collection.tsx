@@ -5,33 +5,10 @@ import FilterSidebar from "../components/Products/FilterSidebar.tsx";
 import CollectionFilterBar from "../components/Products/CollectionFilterBar.tsx";
 import ProductGrid from "../components/Products/ProductGrid.tsx";
 import Pagination from "../components/Common/Pagination.tsx";
+import EmptyState from "../components/Common/EmptyState.tsx";
+import { ProductGridSkeleton } from "../components/Common/Skeletons.tsx";
 import { productService } from "../services/productService.ts";
 import type { Product, Pagination as PaginationType } from "../types/product.ts";
-import { placeholderProducts } from "../constants";
-
-const sortFallbackProducts = (prods: Product[], sortBy?: string | null): Product[] => {
-  const list = [...prods];
-  switch (sortBy) {
-    case "priceAsc":
-      return list.sort((a, b) => a.price - b.price);
-    case "priceDesc":
-      return list.sort((a, b) => b.price - a.price);
-    case "titleAsc":
-      return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-    case "titleDesc":
-      return list.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
-    case "bestSelling":
-    case "popularity":
-      return list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    case "featured":
-      return list.sort((a, b) => Number(b.isFeatured || 0) - Number(a.isFeatured || 0));
-    case "dateAsc":
-      return list.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
-    case "dateDesc":
-    default:
-      return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  }
-};
 
 const Collection = () => {
   const { collection } = useParams<{ collection: string }>();
@@ -47,6 +24,8 @@ const Collection = () => {
     hasPrevPage: false,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement | null>(null);
 
@@ -117,6 +96,7 @@ const Collection = () => {
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
+    setLoadError(false);
 
     const currentPage = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Number(searchParams.get("limit")) || 20;
@@ -144,70 +124,36 @@ const Collection = () => {
     productService
       .getProducts(query)
       .then((data) => {
-        if (isMounted) {
-          if (data && Array.isArray(data.products) && data.products.length > 0) {
-            setProducts(data.products);
-            if (data.pagination) {
-              setPagination(data.pagination);
-            } else {
-              setPagination({
-                total: data.products.length,
-                page: currentPage,
-                limit,
-                totalPages: Math.max(1, Math.ceil(data.products.length / limit)),
-                hasNextPage: currentPage * limit < data.products.length,
-                hasPrevPage: currentPage > 1,
-              });
-            }
-          } else {
-            setProducts([]);
-            setPagination({
-              total: 0,
-              page: currentPage,
-              limit,
-              totalPages: 1,
-              hasNextPage: false,
-              hasPrevPage: false,
-            });
-          }
+        if (!isMounted) return;
+
+        const list = Array.isArray(data?.products) ? data.products : [];
+        setProducts(list);
+
+        if (data?.pagination) {
+          setPagination(data.pagination);
+        } else {
+          setPagination({
+            total: list.length,
+            page: currentPage,
+            limit,
+            totalPages: Math.max(1, Math.ceil(list.length / limit)),
+            hasNextPage: currentPage * limit < list.length,
+            hasPrevPage: currentPage > 1,
+          });
         }
       })
       .catch((err) => {
         console.warn("Could not fetch collection products from API:", err);
         if (isMounted) {
-          let fallback = sortFallbackProducts(
-            placeholderProducts as unknown as Product[],
-            sortBy
-          );
-
-          // Apply category / gender / color filters to fallback if present
-          if (query.category) {
-            fallback = fallback.filter((p) =>
-              p.category?.toLowerCase().includes(query.category!.toLowerCase())
-            );
-          }
-          if (query.gender) {
-            fallback = fallback.filter(
-              (p) => p.gender?.toLowerCase() === query.gender!.toLowerCase()
-            );
-          }
-          if (query.color) {
-            fallback = fallback.filter((p) =>
-              p.colors?.some((c) => c.toLowerCase() === query.color!.toLowerCase())
-            );
-          }
-
-          const total = fallback.length;
-          const totalPages = Math.max(1, Math.ceil(total / limit));
-          const start = (currentPage - 1) * limit;
-          setProducts(fallback.slice(start, start + limit));
+          setProducts([]);
+          setLoadError(true);
           setPagination({
-            total,
+            total: 0,
             page: currentPage,
             limit,
-            totalPages,
-            hasNextPage: currentPage < totalPages,
-            hasPrevPage: currentPage > 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
           });
         }
       })
@@ -220,7 +166,7 @@ const Collection = () => {
     return () => {
       isMounted = false;
     };
-  }, [collection, searchParams]);
+  }, [collection, searchParams, reloadKey]);
 
   return (
     <div className="relative min-h-screen bg-white">
@@ -300,9 +246,7 @@ const Collection = () => {
 
         {/* Product Grid & States */}
         {isLoading ? (
-          <div className="flex justify-center items-center py-24 min-h-[350px]">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-black" />
-          </div>
+          <ProductGridSkeleton count={8} className="min-h-[350px]" />
         ) : products.length > 0 ? (
           <>
             <ProductGrid products={products} />
@@ -319,14 +263,35 @@ const Collection = () => {
               </div>
             )}
           </>
+        ) : loadError ? (
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <EmptyState
+              title="Unable to load products"
+              description="We couldn't reach the catalog right now. Please try again in a moment."
+              action={{
+                label: "Try again",
+                onClick: () => setReloadKey((current) => current + 1),
+              }}
+            />
+          </div>
         ) : (
-          <div className="text-center py-16 bg-gray-50 rounded-xl my-6 border border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
-              No products found
-            </h3>
-            <p className="text-gray-500 text-sm">
-              Try adjusting your filters or search criteria.
-            </p>
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <EmptyState
+              title="No products yet"
+              description={
+                activeFilterCount > 0
+                  ? "Try adjusting your filters or search criteria to see more pieces."
+                  : "This collection is still being prepared. Please check back soon for new arrivals."
+              }
+              action={
+                activeFilterCount > 0
+                  ? {
+                      label: "Clear filters",
+                      onClick: () => setSearchParams(new URLSearchParams()),
+                    }
+                  : { label: "Browse all products", to: "/collections/all" }
+              }
+            />
           </div>
         )}
       </div>

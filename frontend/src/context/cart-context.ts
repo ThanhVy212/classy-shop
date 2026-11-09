@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { Cart, CartItem } from "../types/cart";
+import type { Cart, CartItem, CartItemSnapshot } from "../types/cart";
 
 export interface CartContextType {
   cart: Cart | null;
@@ -7,11 +7,14 @@ export interface CartContextType {
   totalItems: number;
   totalPrice: number;
   isLoading: boolean;
+  /** Number of cart mutations waiting to reach the server (offline queue). */
+  pendingSyncCount: number;
   addToCart: (
     productId: string,
     size: string,
     color: string,
-    quantity?: number
+    quantity?: number,
+    snapshot?: CartItemSnapshot
   ) => Promise<void>;
   updateQuantity: (
     productId: string,

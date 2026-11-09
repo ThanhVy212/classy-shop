@@ -1,5 +1,6 @@
 import Header from "../Common/Header.tsx";
 import Footer from "../Common/Footer.tsx";
+import OfflineBanner from "../Common/OfflineBanner.tsx";
 import {Outlet} from "react-router-dom";
 
 const UserLayout = () => {
@@ -10,6 +11,7 @@ const UserLayout = () => {
                 <Outlet />
             </main>
             <Footer />
+            <OfflineBanner />
         </>
     )
 }

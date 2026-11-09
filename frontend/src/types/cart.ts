@@ -8,6 +8,16 @@ export interface CartItem {
   quantity: number;
 }
 
+/**
+ * Optional product details supplied by the caller so the cart can be rendered
+ * optimistically before the server responds (and while offline).
+ */
+export interface CartItemSnapshot {
+  name: string;
+  image?: string;
+  price: number;
+}
+
 export interface Cart {
   _id?: string;
   user?: string;
