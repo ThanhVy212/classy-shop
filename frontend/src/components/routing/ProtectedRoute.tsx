@@ -1,17 +1,9 @@
 import { useEffect, type ReactNode } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.ts";
+import { PageSkeleton } from "../Common/Skeletons.tsx";
 
-const AuthLoadingScreen = () => (
-    <div className="flex min-h-[70vh] items-center justify-center bg-[var(--color-canvas)]">
-        <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-ink-muted)]">
-                Checking your access
-            </p>
-        </div>
-    </div>
-);
+const AuthLoadingScreen = () => <PageSkeleton />;
 
 const loginRedirect = (pathname: string, search: string) =>
     `/login?redirect=${encodeURIComponent(`${pathname}${search}`)}`;

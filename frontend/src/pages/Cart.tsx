@@ -20,6 +20,8 @@ import { useSyncedCart } from "../hooks/useSyncedCart.ts";
 import type { SyncedCartLine } from "../hooks/useSyncedCart.ts";
 import { getColorStyle } from "../utils/colors.ts";
 import Button from "../components/Common/Button.tsx";
+import { CartSkeleton } from "../components/Common/Skeletons.tsx";
+import OptimizedImage from "../components/Common/OptimizedImage.tsx";
 
 const getItemKey = (productId: string, size: string, color: string) =>
   `${productId}-${size}-${color}`;
@@ -100,16 +102,7 @@ const Cart = () => {
   };
 
   if (authLoading || (!cart && cartLoading)) {
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center bg-[var(--color-canvas)]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-ink-muted)]">
-            Loading your bag
-          </p>
-        </div>
-      </div>
-    );
+    return <CartSkeleton />;
   }
 
   if (items.length === 0) {
@@ -213,9 +206,12 @@ const Cart = () => {
                       >
                         <div className="h-32 w-24 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] sm:h-36 sm:w-28">
                           {item.image ? (
-                            <img
+                            <OptimizedImage
                               src={item.image}
                               alt={item.name}
+                              widths={[96, 144, 192]}
+                              sizes="(min-width: 640px) 112px, 96px"
+                              crop="fill"
                               className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                             />
                           ) : (

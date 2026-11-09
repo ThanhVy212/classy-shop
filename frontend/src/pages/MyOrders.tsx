@@ -24,6 +24,7 @@ import {
   PAYMENT_STATUS_META,
 } from "../utils/order";
 import { getApiErrorMessage } from "../utils/apiError";
+import OptimizedImage from "../components/Common/OptimizedImage.tsx";
 
 const PAGE_SIZE = 5;
 
@@ -283,9 +284,12 @@ const MyOrders = () => {
                           title={item.name}
                         >
                           {item.image ? (
-                            <img
+                            <OptimizedImage
                               src={item.image}
                               alt={item.name}
+                              widths={[56, 84, 112]}
+                              sizes="56px"
+                              crop="fill"
                               className="h-full w-full object-cover"
                             />
                           ) : (

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../hooks/useAuth.ts";
+import OptimizedImage from "../components/Common/OptimizedImage.tsx";
 import CancelOrderDialog from "../components/Orders/CancelOrderDialog";
 import { orderService } from "../services/orderService.ts";
 import type {
@@ -42,6 +43,7 @@ import {
 import { getApiErrorMessage } from "../utils/apiError.ts";
 import { getColorStyle } from "../utils/colors.ts";
 import Button from "../components/Common/Button.tsx";
+import { OrderDetailsSkeleton } from "../components/Common/Skeletons.tsx";
 
 const PAYMENT_STATUSES: PaymentStatus[] = [
   "pending",
@@ -187,16 +189,7 @@ const OrderDetails = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-[var(--color-canvas)]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-primary)]" />
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-ink-muted)]">
-            Loading order
-          </p>
-        </div>
-      </div>
-    );
+    return <OrderDetailsSkeleton />;
   }
 
   if (!order) {
@@ -449,9 +442,12 @@ const OrderDetails = () => {
                       className="h-20 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-muted)]"
                     >
                       {item.image ? (
-                        <img
+                        <OptimizedImage
                           src={item.image}
                           alt={item.name}
+                          widths={[64, 96, 128]}
+                          sizes="64px"
+                          crop="fill"
                           className="h-full w-full object-cover"
                         />
                       ) : (

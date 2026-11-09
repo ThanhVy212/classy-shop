@@ -22,6 +22,7 @@ import { useAuth } from "../hooks/useAuth.ts";
 import { authService } from "../services/authService";
 import { getApiErrorMessage } from "../utils/apiError";
 import Button from "../components/Common/Button.tsx";
+import OptimizedImage from "../components/Common/OptimizedImage.tsx";
 
 const getInitials = (name?: string) =>
   (name || "")
@@ -115,9 +116,12 @@ const Profile = () => {
               <div className="relative shrink-0">
                 <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-[var(--color-border-strong)] bg-[var(--color-surface-muted)] text-xl font-semibold text-[var(--color-primary)] sm:h-20 sm:w-20">
                   {user?.avatarUrl ? (
-                    <img
+                    <OptimizedImage
                       src={user.avatarUrl}
                       alt={user?.name || "Profile photo"}
+                      widths={[64, 96, 160]}
+                      sizes="80px"
+                      crop="fill"
                       className="h-full w-full object-cover"
                     />
                   ) : (

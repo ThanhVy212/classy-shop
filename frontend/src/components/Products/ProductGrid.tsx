@@ -1,5 +1,6 @@
 import { ImageOff } from "lucide-react";
 import { Link } from "react-router-dom";
+import OptimizedImage from "../Common/OptimizedImage.tsx";
 import WishlistButton from "./WishlistButton.tsx";
 
 const ProductGrid = ({ products }: ProductGridProps) => {
@@ -25,9 +26,12 @@ const ProductGrid = ({ products }: ProductGridProps) => {
               <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
                 <div className="aspect-[3/4]">
                   {imageUrl ? (
-                    <img
+                    <OptimizedImage
                       src={imageUrl}
                       alt={product.name}
+                      widths={[240, 320, 480, 640, 800]}
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                      crop="fill"
                       className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                       loading="lazy"
                     />

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import OptimizedImage from "../Common/OptimizedImage.tsx";
 import {
   ZoomIn,
   ZoomOut,
@@ -223,9 +224,12 @@ const ProductImageZoom = ({
         aria-label={src ? "Zoom in product image" : alt}
       >
         {src ? (
-          <img
+          <OptimizedImage
             src={src}
             alt={alt}
+            widths={[480, 768, 960, 1280, 1600]}
+            sizes="(min-width: 768px) 50vw, 100vw"
+            crop="limit"
             className="w-full h-auto max-h-[550px] object-cover rounded-xl pointer-events-none transition-transform"
             style={{
               transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
@@ -416,15 +420,19 @@ const ProductImageZoom = ({
                   willChange: "transform",
                 }}
               >
-                <img
+                <OptimizedImage
                   src={src}
                   alt={alt}
+                  widths={[1280, 1600, 2000]}
+                  sizes="90vw"
+                  crop="limit"
                   draggable={false}
                   className="max-w-[90vw] max-h-[75vh] object-contain rounded-md shadow-2xl pointer-events-none"
                   style={{
                     backfaceVisibility: "hidden",
                     WebkitBackfaceVisibility: "hidden",
                   }}
+                  loading="eager"
                 />
               </div>
 
@@ -456,9 +464,12 @@ const ProductImageZoom = ({
                         : "border-transparent opacity-60 hover:opacity-100 hover:border-gray-400"
                     }`}
                   >
-                    <img
+                    <OptimizedImage
                       src={img.url}
                       alt={img.altText || `Thumbnail ${idx + 1}`}
+                      widths={[56, 96, 128]}
+                      sizes="56px"
+                      crop="fill"
                       className="w-full h-full object-cover"
                     />
                   </button>

@@ -48,7 +48,7 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
 
-  // For compatibility with mock data / legacy fields
+  // For compatibility with legacy fields
   image?: string;
   productId?: number | string;
   size?: string;

@@ -1,33 +1,38 @@
 import Button from "../Common/Button.tsx";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { sampleNewArrivals } from "../../constants";
+import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import EmptyState from "../Common/EmptyState.tsx";
+import OptimizedImage from "../Common/OptimizedImage.tsx";
+import { ProductCarouselSkeleton } from "../Common/Skeletons.tsx";
 import { productService } from "../../services/productService.ts";
+import { isNotFoundError } from "../../utils/apiError.ts";
 import type { Product } from "../../types/product.ts";
 
 const NewArrivals = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
+    setHasError(false);
+
     productService
       .getNewArrivals()
       .then((data) => {
         if (isMounted) {
-          if (data && data.length > 0) {
-            setProducts(data);
-          } else {
-            setProducts(sampleNewArrivals as unknown as Product[]);
-          }
+          setProducts(Array.isArray(data) ? data : []);
         }
       })
       .catch((err) => {
-        console.warn("Could not fetch new arrivals from backend, using fallback:", err);
+        console.warn("Could not fetch new arrivals from backend:", err);
         if (isMounted) {
-          setProducts(sampleNewArrivals as unknown as Product[]);
+          setProducts([]);
+          setHasError(!isNotFoundError(err));
         }
       })
       .finally(() => {
@@ -37,7 +42,7 @@ const NewArrivals = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const getScrollAmount = () => {
     const container = scrollRef.current;
@@ -187,22 +192,24 @@ const NewArrivals = () => {
         </p>
 
         {/* Scroll Buttons */}
-        <div className="absolute right-0 bottom-[-30px] flex space-x-2">
-          <Button
-            className="btn-qty"
-            onClick={() => scroll("left")}
-            aria-label="Previous items"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          <Button
-            className="btn-qty"
-            onClick={() => scroll("right")}
-            aria-label="Next items"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-        </div>
+        {!loading && products.length > 0 && (
+          <div className="absolute right-0 bottom-[-30px] flex space-x-2">
+            <Button
+              className="btn-qty"
+              onClick={() => scroll("left")}
+              aria-label="Previous items"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+            <Button
+              className="btn-qty"
+              onClick={() => scroll("right")}
+              aria-label="Next items"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Scrollable Content */}
@@ -211,27 +218,52 @@ const NewArrivals = () => {
         className="container mx-auto overflow-x-auto flex gap-6 relative better-scrollbar pb-6"
       >
         {loading ? (
-          <div className="w-full flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black" />
-          </div>
+          <ProductCarouselSkeleton count={3} />
+        ) : products.length === 0 ? (
+          <EmptyState
+            className="w-full"
+            title={hasError ? "Unable to load new arrivals" : "No new arrivals yet"}
+            description={
+              hasError
+                ? "We couldn't reach the catalog right now. Please try again in a moment."
+                : "Fresh pieces will appear here as soon as they are added to the store."
+            }
+            action={
+              hasError
+                ? {
+                    label: "Try again",
+                    onClick: () => setReloadKey((current) => current + 1),
+                  }
+                : { label: "Browse all products", to: "/collections/all" }
+            }
+          />
         ) : (
           products.map((product) => {
-            const imgUrl =
-              product.images?.[0]?.url ||
-              product.image ||
-              "https://picsum.photos/500/500";
+            const imgUrl = product.images?.[0]?.url || product.image || "";
             return (
               <Link
                 key={product._id}
                 to={`/products/${product._id}`}
                 className="w-full min-w-full sm:w-[calc((100%-1.5rem)/2)] sm:min-w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-3rem)/3)] lg:min-w-[calc((100%-3rem)/3)] relative block shrink-0 group"
               >
-                <div className="overflow-hidden rounded-lg">
-                  <img
-                    src={imgUrl}
-                    alt={product.images?.[0]?.altText || product.name}
-                    className="w-full h-[500px] object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
+                <div className="overflow-hidden rounded-lg bg-[var(--color-surface-muted)]">
+                  {imgUrl ? (
+                    <OptimizedImage
+                      src={imgUrl}
+                      alt={product.images?.[0]?.altText || product.name}
+                      widths={[320, 480, 640, 960, 1280]}
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      crop="fill"
+                      className="w-full h-[500px] object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-[500px] w-full flex-col items-center justify-center gap-2 text-[var(--color-ink-muted)]">
+                      <ImageOff className="h-8 w-8" />
+                      <span className="text-xs font-medium uppercase tracking-[0.18em]">
+                        No image
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 bg-black/40 backdrop-blur-md text-white p-4 rounded-b-lg">
