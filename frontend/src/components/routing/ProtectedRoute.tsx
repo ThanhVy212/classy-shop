@@ -1,7 +1,9 @@
-import { useEffect, type ReactNode } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import type { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.ts";
 import { PageSkeleton } from "../Common/Skeletons.tsx";
+import UserLayout from "../Layout/UserLayout.tsx";
+import NotFound from "../../pages/NotFound.tsx";
 
 const AuthLoadingScreen = () => <PageSkeleton />;
 
@@ -38,34 +40,27 @@ export const ProtectedRoute = ({ children }: RouteGuardProps) => {
 };
 
 /**
- * Requires a signed-in administrator. Unauthorized visitors are redirected
- * silently: no toast, no redirect hint and no indication that the admin area
- * exists. This prevents people from probing for protected routes.
+ * Requires a signed-in administrator.
+ *
+ * Guests and customers are NOT redirected to /login and their session is
+ * never touched: doing either would reveal that the admin area exists and
+ * would log customers out just for opening an admin URL. Instead they get the
+ * exact same 404 screen as any unknown route, rendered with the storefront
+ * chrome, while the URL stays unchanged.
  */
 export const AdminRoute = ({ children }: RouteGuardProps) => {
-    const { isAuthenticated, isAdmin, isLoading } = useAuth();
-    const navigate = useNavigate();
-
-    const isForbidden = !isLoading && isAuthenticated && !isAdmin;
-
-    useEffect(() => {
-        if (!isForbidden) return;
-        navigate("/", { replace: true });
-    }, [isForbidden, navigate]);
+    const { isAdmin, isLoading } = useAuth();
 
     if (isLoading) {
         return <AuthLoadingScreen />;
     }
 
-    if (!isAuthenticated) {
-        // Do not include a `redirect` param or state: after signing in, admins
-        // still land on /admin automatically by role, while customers simply
-        // land on the storefront.
-        return <Navigate to="/login" replace />;
-    }
-
     if (!isAdmin) {
-        return null;
+        return (
+            <UserLayout>
+                <NotFound />
+            </UserLayout>
+        );
     }
 
     return <>{children}</>;

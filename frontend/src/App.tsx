@@ -25,6 +25,7 @@ import OrderManagement from "./components/Admin/OrderManagement.tsx";
 import DiscountManagement from "./components/Admin/DiscountManagement.tsx";
 import UserManagement from "./components/Admin/UserManagement.tsx";
 import InventoryManagement from "./components/Admin/InventoryManagement.tsx";
+import NotFound from "./pages/NotFound.tsx";
 import { AdminRoute, ProtectedRoute } from "./components/routing/ProtectedRoute.tsx";
 
 const App = () => {
@@ -96,6 +97,10 @@ const App = () => {
                                         <OrderDetails />
                                     </ProtectedRoute>
                                 }/>
+                                {/* Any unknown URL (including /admin/* that no
+                                    admin-only child matches) renders the same
+                                    404 screen. */}
+                                <Route path="*" element={<NotFound />} />
                             </Route>
                             <Route path="/admin" element={
                                 <AdminRoute>
