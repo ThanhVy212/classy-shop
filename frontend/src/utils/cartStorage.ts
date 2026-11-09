@@ -68,6 +68,19 @@ export const isNetworkError = (error: unknown): boolean => {
   return error.code === "ERR_NETWORK" || error.code === "ECONNABORTED";
 };
 
+const DEFINITIVE_REJECTION_STATUSES = new Set([400, 404, 409, 422]);
+
+/**
+ * A definitive rejection can never succeed if replayed, so the operation may be
+ * dropped. Everything else - network loss, 401 auth refresh, 408 timeouts, 429
+ * rate limits, 5xx server errors and unknown failures - is treated as
+ * transient and keeps the operation queued for a later retry.
+ */
+export const isDefinitiveCartRejection = (error: unknown): boolean => {
+  if (!axios.isAxiosError(error) || !error.response) return false;
+  return DEFINITIVE_REJECTION_STATUSES.has(error.response.status);
+};
+
 /* -------------------------------------------------------------------------- */
 /* Cached cart                                                                */
 /* -------------------------------------------------------------------------- */
@@ -75,9 +88,16 @@ export const isNetworkError = (error: unknown): boolean => {
 export const readCachedCart = (scope: string): Cart | null => {
   if (typeof window === "undefined") return null;
 
-  const cached = safeParse<CachedCart>(
-    window.localStorage.getItem(`${CACHE_PREFIX}${scope}`),
-  );
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(`${CACHE_PREFIX}${scope}`);
+  } catch {
+    // Storage access can throw (privacy mode, blocked cookies). Treat it as a
+    // cache miss so CartProvider initializers keep their safe fallback.
+    return null;
+  }
+
+  const cached = safeParse<CachedCart>(raw);
 
   if (!cached || !isCartLike(cached.cart)) return null;
   if (Date.now() - Number(cached.savedAt || 0) > CACHE_TTL_MS) return null;
@@ -129,9 +149,16 @@ export const clearCachedCart = (scope: string): void => {
 export const readCartQueue = (scope: string): CartOperation[] => {
   if (typeof window === "undefined") return [];
 
-  const queue = safeParse<CartOperation[]>(
-    window.localStorage.getItem(`${QUEUE_PREFIX}${scope}`),
-  );
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(`${QUEUE_PREFIX}${scope}`);
+  } catch {
+    // No readable storage means no known pending work; callers can still
+    // operate in-memory for this session.
+    return [];
+  }
+
+  const queue = safeParse<CartOperation[]>(raw);
 
   if (!Array.isArray(queue)) return [];
 
@@ -296,46 +323,85 @@ export interface FlushResult {
 }
 
 /**
- * Replays queued mutations in order. Network failures stop the replay so the
- * remaining operations survive until the next reconnect. Business failures
- * (validation, stock) are dropped, then the caller refreshes the server cart.
+ * Replays queued mutations in order. Transient failures (network loss, 401,
+ * 408, 429, 5xx and unknown errors) stop the replay so the remaining
+ * operations survive until the next retry. Definitive rejections (400, 404,
+ * 409, 422) are dropped, then the caller refreshes the server cart.
+ *
+ * Only one flush may run per scope at a time; concurrent callers share the
+ * in-flight promise instead of racing on the same localStorage queue.
  */
-export const flushCartQueue = async (
+const inFlightFlushes = new Map<string, Promise<FlushResult>>();
+
+const runFlushCartQueue = async (
   scope: string,
   executor: (operation: CartOperation) => Promise<Cart>,
 ): Promise<FlushResult> => {
-  const queue = readCartQueue(scope);
   let cart: Cart | null = null;
   let flushed = 0;
   let offline = false;
+  let queueCleared = false;
 
-  while (queue.length > 0) {
+  while (true) {
+    // Re-read before selecting each operation: enqueue/clear may have changed
+    // the queue while the previous executor was in flight.
+    const queue = readCartQueue(scope);
+    if (queue.length === 0) break;
+
     const operation = queue[0];
 
     try {
       cart = await executor(operation);
-      queue.shift();
       flushed += 1;
-      writeCartQueue(scope, queue);
     } catch (error) {
-      if (isNetworkError(error)) {
+      // Network failures and transient responses (401, 408, 429, 5xx, etc.)
+      // must leave the queued operation untouched so it can be retried.
+      if (!isDefinitiveCartRejection(error)) {
         offline = true;
         break;
       }
 
-      // A server-side rejection means this operation can never succeed. Drop
-      // it so a bad entry cannot block the rest of the queue forever.
-      queue.shift();
-      writeCartQueue(scope, queue);
+      // Definitive rejection (400, 404, 409, 422): this operation can never
+      // succeed, so drop it below instead of blocking the queue forever.
     }
+
+    // Remove the processed head from a freshly read queue, never from the
+    // stale snapshot captured before the request. This keeps concurrent
+    // enqueues (and a concurrent clear) intact.
+    const freshQueue = readCartQueue(scope);
+    if (freshQueue.length === 0) {
+      // The queue disappeared while the request was in flight (clearCart), so
+      // there is no processed head left to remove.
+      queueCleared = true;
+      break;
+    }
+
+    freshQueue.shift();
+    writeCartQueue(scope, freshQueue);
   }
 
-  if (cart) writeCachedCart(scope, cart);
+  // Do not restore a stale cached cart if the shopper cleared it meanwhile.
+  if (cart && !queueCleared) writeCachedCart(scope, cart);
 
   return {
     cart,
     flushed,
-    remaining: queue.length,
+    remaining: readCartQueue(scope).length,
     offline,
   };
+};
+
+export const flushCartQueue = (
+  scope: string,
+  executor: (operation: CartOperation) => Promise<Cart>,
+): Promise<FlushResult> => {
+  const inFlight = inFlightFlushes.get(scope);
+  if (inFlight) return inFlight;
+
+  const run = runFlushCartQueue(scope, executor).finally(() => {
+    inFlightFlushes.delete(scope);
+  });
+
+  inFlightFlushes.set(scope, run);
+  return run;
 };

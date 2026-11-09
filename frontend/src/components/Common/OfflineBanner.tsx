@@ -23,16 +23,27 @@ const OfflineBanner = () => {
           <>
             <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             <span>
-              Đang đồng bộ giỏ hàng
+              Syncing your cart
               {pendingSyncCount > 0 ? ` (${pendingSyncCount})` : ""}...
             </span>
+            {pendingSyncCount > 0 && (
+              <button
+                type="button"
+                onClick={() => void refreshCart()}
+                aria-label="Retry cart sync"
+                className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold transition-colors hover:bg-white/25"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Retry
+              </button>
+            )}
           </>
         ) : (
           <>
             <CloudOff className="h-4 w-4 shrink-0" />
             <span>
-              Bạn đang ngoại tuyến. Giỏ hàng vẫn được lưu và sẽ đồng bộ khi có
-              mạng.
+              You're offline. Your cart is saved and will sync when you're back
+              online.
             </span>
             <button
               type="button"
@@ -40,7 +51,7 @@ const OfflineBanner = () => {
               className="ml-1 inline-flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold transition-colors hover:bg-white/25"
             >
               <RefreshCw className="h-3 w-3" />
-              Thử lại
+              Retry
             </button>
           </>
         )}

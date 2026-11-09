@@ -202,6 +202,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       // Optimistic update: the shopper sees the item immediately.
       commitCart(applyCartOperation(cart, operation));
 
+      // Never send an out-of-order direct request while earlier mutations are
+      // still queued; keep the optimistic state and replay in order instead.
+      if (readCartQueue(scope).length > 0) {
+        enqueueCartOperation(scope, operation);
+        setPendingSyncCount(readCartQueue(scope).length);
+        return;
+      }
+
       try {
         const guestId = !isAuthenticated
           ? cartService.getGuestId()
@@ -250,6 +258,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const previous = cart;
       commitCart(applyCartOperation(cart, operation));
 
+      // Keep ordering intact: queue behind existing pending mutations.
+      if (readCartQueue(scope).length > 0) {
+        enqueueCartOperation(scope, operation);
+        setPendingSyncCount(readCartQueue(scope).length);
+        return;
+      }
+
       try {
         const guestId = !isAuthenticated
           ? cartService.getGuestId()
@@ -290,6 +305,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       const previous = cart;
       commitCart(applyCartOperation(cart, operation));
+
+      // Keep ordering intact: queue behind existing pending mutations.
+      if (readCartQueue(scope).length > 0) {
+        enqueueCartOperation(scope, operation);
+        setPendingSyncCount(readCartQueue(scope).length);
+        return;
+      }
 
       try {
         const guestId = !isAuthenticated

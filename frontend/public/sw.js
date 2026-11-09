@@ -57,8 +57,19 @@ const isCloudinaryImage = (url) =>
 const handleNavigation = async (request) => {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(STATIC_CACHE);
-    cache.put("/index.html", response.clone());
+
+    // Only cache successful documents; error or redirect responses must not
+    // replace the offline app shell.
+    if (response.ok) {
+      try {
+        const cache = await caches.open(STATIC_CACHE);
+        await cache.put("/index.html", response.clone());
+      } catch {
+        // Cache writes are best-effort. A quota or private-mode failure must
+        // not turn a successful navigation into a rejection.
+      }
+    }
+
     return response;
   } catch {
     const cache = await caches.open(STATIC_CACHE);
