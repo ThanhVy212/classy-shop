@@ -1,4 +1,5 @@
 import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
 import Session from "../models/Session.js";
 import User from "../models/User.js";
 
@@ -31,28 +32,52 @@ const parseCookies = (header = "") => {
 };
 
 /**
- * Sockets are authenticated with the existing httpOnly refresh cookie. The
- * access token is short lived and lives only in memory, so using the refresh
- * cookie keeps long-lived admin dashboard tabs connected.
+ * Sockets are authenticated with the short-lived access token the SPA keeps in
+ * memory. The refresh cookie is scoped to the storefront origin, so it cannot
+ * be read by a cross-site handshake to the backend; it is still accepted as a
+ * fallback for local development where both origins are localhost.
  */
+const verifyAccessToken = (token) =>
+  new Promise((resolve, reject) => {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+      if (error) return reject(error);
+      return resolve(decoded);
+    });
+  });
+
+const resolveUserId = async (socket) => {
+  const accessToken = socket.handshake.auth?.token;
+
+  if (typeof accessToken === "string" && accessToken.trim()) {
+    const decoded = await verifyAccessToken(accessToken.trim());
+    return decoded?.userId || null;
+  }
+
+  const cookies = parseCookies(socket.handshake.headers.cookie);
+  const refreshToken = cookies.refreshToken;
+
+  if (!refreshToken) return null;
+
+  const session = await Session.findOne({ refreshToken }).select(
+    "userId expiresAt",
+  );
+
+  if (!session || new Date(session.expiresAt).getTime() <= Date.now()) {
+    return null;
+  }
+
+  return session.userId;
+};
+
 const authenticateAdmin = async (socket, next) => {
   try {
-    const cookies = parseCookies(socket.handshake.headers.cookie);
-    const refreshToken = cookies.refreshToken;
+    const userId = await resolveUserId(socket);
 
-    if (!refreshToken) {
+    if (!userId) {
       return next(new Error("Unauthorized"));
     }
 
-    const session = await Session.findOne({ refreshToken }).select(
-      "userId expiresAt",
-    );
-
-    if (!session || new Date(session.expiresAt).getTime() <= Date.now()) {
-      return next(new Error("Unauthorized"));
-    }
-
-    const user = await User.findById(session.userId).select("role");
+    const user = await User.findById(userId).select("role");
 
     if (!user) {
       return next(new Error("Unauthorized"));
@@ -67,6 +92,16 @@ const authenticateAdmin = async (socket, next) => {
 
     return next();
   } catch (error) {
+    // An expired or forged token is an authentication failure, not a server
+    // error, so the client can react to it correctly.
+    if (
+      error?.name === "JsonWebTokenError" ||
+      error?.name === "TokenExpiredError" ||
+      error?.name === "NotBeforeError"
+    ) {
+      return next(new Error("Unauthorized"));
+    }
+
     console.error("Socket authentication error:", error);
     return next(new Error("Server error"));
   }

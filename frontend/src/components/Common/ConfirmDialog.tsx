@@ -74,7 +74,7 @@ const ConfirmDialog = ({
                     onClose();
                 }
             }}
-            className="max-h-full w-full max-w-md overflow-y-auto rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-2xl backdrop:bg-black/45 backdrop:backdrop-blur-[2px] sm:p-6 open:flex open:flex-col"
+            className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto overscroll-contain rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left shadow-2xl backdrop:bg-black/45 backdrop:backdrop-blur-[2px] sm:p-6 open:flex open:flex-col"
         >
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">

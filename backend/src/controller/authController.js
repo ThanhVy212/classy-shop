@@ -20,11 +20,13 @@ const isProduction =
   Boolean(process.env.RENDER) ||
   Boolean(process.env.CLIENT_URL && process.env.CLIENT_URL.startsWith("https://"));
 
+// The API is served from the storefront origin through the Vercel rewrite, so
+// the refresh cookie is first-party. SameSite=Lax is enough (and is not blocked
+// by Safari/ITP the way SameSite=None cookies can be).
 const refreshCookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
-  partitioned: isProduction,
+  sameSite: "lax",
   path: "/",
   maxAge: REFRESH_TOKEN_TTL,
 };
@@ -32,14 +34,14 @@ const refreshCookieOptions = {
 const clearCookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
+  sameSite: "lax",
   path: "/",
 };
 
 const oauthStateCookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
+  sameSite: "lax",
   path: "/api/auth",
   maxAge: OAUTH_STATE_TTL,
 };
@@ -47,7 +49,7 @@ const oauthStateCookieOptions = {
 const oauthStateClearOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
+  sameSite: "lax",
   path: "/api/auth",
 };
 
@@ -185,8 +187,6 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   try {
     const token = req.cookies?.refreshToken;
-
-    console.log(token);
 
     if (token) {
       await Session.deleteOne({ refreshToken: token });
