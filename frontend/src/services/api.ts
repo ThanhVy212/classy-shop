@@ -3,6 +3,8 @@ import axios from "axios";
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
+const HAS_SESSION_KEY = "classyshop_has_session";
+
 let inMemoryToken: string | null = null;
 
 export const setAccessToken = (token: string | null) => {
@@ -10,6 +12,30 @@ export const setAccessToken = (token: string | null) => {
 };
 
 export const getAccessToken = () => inMemoryToken;
+
+/**
+ * True only when the server explicitly says the session is no longer valid.
+ * Network failures, timeouts, 429 rate limits and 5xx responses are transient
+ * and must never be treated as "you are logged out".
+ */
+export const isDefinitiveAuthError = (error: unknown): boolean =>
+  axios.isAxiosError(error) &&
+  (error.response?.status === 401 || error.response?.status === 403);
+
+type AuthFailureHandler = () => void;
+
+let authFailureHandler: AuthFailureHandler | null = null;
+
+/**
+ * Lets AuthContext mirror a session that expired while the app was running.
+ * Without this, axios would clear the token but React would keep showing a
+ * signed-in UI.
+ */
+export const setAuthFailureHandler = (
+  handler: AuthFailureHandler | null
+) => {
+  authFailureHandler = handler;
+};
 
 // Every caller that needs a new access token awaits the same in-flight
 // request. Without this, React StrictMode double effects and a burst of 401s
@@ -79,9 +105,15 @@ api.interceptors.response.use(
         const accessToken = await refreshAccessToken();
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
-      } catch {
-        setAccessToken(null);
-        localStorage.removeItem("classyshop_has_session");
+      } catch (refreshError) {
+        // Only clear the session when the refresh endpoint definitively says
+        // it is gone. A transient failure (offline, cold backend, 429, 5xx)
+        // keeps the stored session so the next request or reload can retry.
+        if (isDefinitiveAuthError(refreshError)) {
+          setAccessToken(null);
+          localStorage.removeItem(HAS_SESSION_KEY);
+          authFailureHandler?.();
+        }
       }
     }
     return Promise.reject(error);
