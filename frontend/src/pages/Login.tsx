@@ -26,6 +26,7 @@ const Login = () => {
     const stateFrom = (location.state as { from?: { pathname: string } })?.from?.pathname;
     const explicitPath = stateFrom || redirectPath || null;
     const oauthError = searchParams.get("oauth") === "error";
+    const oauthReason = searchParams.get("reason");
 
     // Admins land in the admin panel by default, while customers land in the
     // storefront. A customer must never be sent to an admin-only destination.
@@ -49,9 +50,17 @@ const Login = () => {
 
     useEffect(() => {
         if (oauthError) {
-            setServerError("Google sign-in was cancelled or failed. Please try again.");
+            if (oauthReason && oauthReason !== "cancelled") {
+                console.warn(`Google sign-in failed: ${oauthReason}`);
+            }
+
+            setServerError(
+                oauthReason && oauthReason !== "cancelled"
+                    ? `Google sign-in failed (${oauthReason}). Please try again.`
+                    : "Google sign-in was cancelled or failed. Please try again."
+            );
         }
-    }, [oauthError]);
+    }, [oauthError, oauthReason]);
 
     const {
         register,

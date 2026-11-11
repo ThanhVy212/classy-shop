@@ -35,6 +35,8 @@ nhớ, không dùng cookie.
 ```
 
 Rewrite này phải đứng **trước** rewrite catch-all `/(.*) → /index.html`.
+Header `x-vercel-enable-rewrite-caching: 0` tắt cache CDN cho `/api/*` để
+response auth (`Set-Cookie`, redirect) không bao giờ bị cache.
 
 Nếu backend đổi domain, cập nhật lại `destination` ở cả hai file.
 
@@ -43,24 +45,28 @@ Nếu backend đổi domain, cập nhật lại `destination` ở cả hai file.
 Trong **Project → Settings → Environment Variables**, đặt (hoặc xoá nếu đang có
 giá trị cũ, vì biến trên dashboard sẽ ghi đè `.env.production`):
 
-| Biến              | Giá trị                                     |
-| ----------------- | ------------------------------------------- |
-| `VITE_API_URL`    | `/api`                                      |
-| `VITE_SOCKET_URL` | `https://classy-shop-backend.onrender.com`  |
+| Biến              | Giá trị                                    |
+| ----------------- | ------------------------------------------ |
+| `VITE_API_URL`    | `/api`                                     |
+| `VITE_SOCKET_URL` | `https://classy-shop-backend.onrender.com` |
 
 Sau khi đổi biến môi trường phải **redeploy** (Vite nhúng biến lúc build).
 
 ## 2. Render (backend)
 
-| Biến                   | Giá trị                                                        |
-| ---------------------- | -------------------------------------------------------------- |
-| `CLIENT_URL`           | `https://<frontend-domain>` (đúng origin, không có `/` cuối)   |
-| `GOOGLE_CALLBACK_URL`  | `https://<frontend-domain>/api/auth/callback/google`           |
-| `TRUST_PROXY`          | `2` (client → Vercel → Render)                                 |
+| Biến                  | Giá trị                                                      |
+| --------------------- | ------------------------------------------------------------ |
+| `CLIENT_URL`          | `https://<frontend-domain>` (đúng origin, không có `/` cuối) |
+| `GOOGLE_CALLBACK_URL` | `https://<frontend-domain>/api/auth/callback/google`         |
+| `TRUST_PROXY`         | `2` (client → Vercel → Render)                               |
 
-- `CLIENT_URL` cũng được dùng cho CORS của REST API và Socket.IO, và cho việc
-  redirect sau khi đăng nhập Google. Nếu có nhiều domain, ngăn cách bằng dấu
-  phẩy.
+- `CLIENT_URL` được dùng cho CORS của REST API và Socket.IO, cho redirect sau
+  khi đăng nhập Google, và để suy ra OAuth callback. Nếu có nhiều domain, ngăn
+  cách bằng dấu phẩy (domain đầu tiên được dùng làm origin chính).
+- Ở production backend tự suy ra callback từ `CLIENT_URL`. Nếu
+  `GOOGLE_CALLBACK_URL` trỏ sang host khác, backend ghi cảnh báo và dùng URL
+  suy ra để cookie `oauthState` vẫn first-party. URL đó **vẫn phải** được đăng
+  ký trong Google Cloud Console.
 - `TRUST_PROXY=2` giúp rate limit đọc đúng IP người dùng thay vì IP của edge
   Vercel. `TRUST_PROXY=true` bị chặn vì cho phép giả mạo `X-Forwarded-For`.
 
@@ -80,6 +86,9 @@ domain Render).
 Có thể giữ URI `http://localhost:8000/api/auth/callback/google` cho môi trường
 dev.
 
+> Nếu thiếu URI này, Google hiển thị `Error 400: redirect_uri_mismatch` và
+> không bao giờ gọi về backend.
+
 ## 4. Kiểm tra sau khi deploy
 
 1. Gọi API qua frontend:
@@ -90,7 +99,15 @@ dev.
 
    Phải trả JSON của backend (không phải `index.html`).
 
-2. Đăng nhập, xem response `POST /api/auth/login`:
+2. Bắt đầu OAuth:
+
+   ```bash
+   curl -s -D - -o NUL https://<frontend-domain>/api/auth/google
+   ```
+
+   `Location` phải có `redirect_uri=https%3A%2F%2F<frontend-domain>%2Fapi%2Fauth%2Fcallback%2Fgoogle`.
+
+3. Đăng nhập, xem response `POST /api/auth/login`:
 
    ```
    Set-Cookie: refreshToken=...; Path=/; HttpOnly; Secure; SameSite=Lax
@@ -98,11 +115,11 @@ dev.
 
    `SameSite=Lax` (không còn `None`/`Partitioned`) xác nhận cookie đã first-party.
 
-3. Reload trang nhiều lần → vẫn đăng nhập.
+4. Reload trang nhiều lần → vẫn đăng nhập.
 
-4. Đăng nhập Google → quay về `/oauth/callback?...` thành công.
+5. Đăng nhập Google → quay về `/oauth/callback?...` thành công.
 
-5. Vào `/admin` bằng tài khoản admin → biểu tượng socket "Live" phải kết nối
+6. Vào `/admin` bằng tài khoản admin → biểu tượng socket "Live" phải kết nối
    được (kiểm tra trong DevTools → Network → WS).
 
 ## 5. Bảo mật

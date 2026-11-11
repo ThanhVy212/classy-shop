@@ -53,8 +53,50 @@ const oauthStateClearOptions = {
   path: "/api/auth",
 };
 
-const getClientUrl = () =>
-  (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/+$/, "");
+const getClientUrl = () => {
+  const configured = (process.env.CLIENT_URL || "http://localhost:5173")
+    .split(",")[0]
+    .trim()
+    .replace(/\/+$/, "");
+
+  return configured || "http://localhost:5173";
+};
+
+/**
+ * The OAuth callback has to land on the storefront origin. The state cookie is
+ * set on that origin when the browser starts the flow through the Vercel
+ * rewrite; if Google returns to the backend host instead, the cookie is not
+ * sent and the callback fails with `invalid_state`.
+ *
+ * In production we therefore derive the callback from CLIENT_URL and ignore a
+ * stale GOOGLE_CALLBACK_URL that points at another host. The exact URL still
+ * has to be registered in the Google Cloud Console.
+ */
+const getGoogleCallbackUrl = () => {
+  const configured = (process.env.GOOGLE_CALLBACK_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+  const derived = `${getClientUrl()}/api/auth/callback/google`;
+
+  if (!isProduction) {
+    return configured || derived;
+  }
+
+  if (configured && configured === derived) {
+    return configured;
+  }
+
+  if (configured) {
+    console.warn(
+      `[oauth] GOOGLE_CALLBACK_URL="${configured}" is not on the ` +
+        `storefront origin. Using "${derived}" so the OAuth state cookie ` +
+        `stays first-party. Register this exact URL in the Google Cloud ` +
+        `Console.`,
+    );
+  }
+
+  return derived;
+};
 
 const redirectToClient = (res, path) => res.redirect(`${getClientUrl()}${path}`);
 
@@ -282,7 +324,7 @@ export const updateAvatar = async (req, res) => {
 export const googleAuth = (req, res) => {
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const callbackUrl = process.env.GOOGLE_CALLBACK_URL;
+    const callbackUrl = getGoogleCallbackUrl();
 
     if (!clientId || !callbackUrl) {
       console.error(
@@ -334,7 +376,7 @@ export const googleCallback = async (req, res) => {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: process.env.GOOGLE_CALLBACK_URL,
+        redirect_uri: getGoogleCallbackUrl(),
         grant_type: "authorization_code",
       }),
       signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
